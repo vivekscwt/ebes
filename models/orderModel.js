@@ -1,6 +1,6 @@
 // orderModel.js
 
-const pool = require("../database/connection");
+const pool = require("../database/connection.js-old");
 exports.getAllOrders = () => {
     return new Promise((resolve, reject) => {
         pool.query(

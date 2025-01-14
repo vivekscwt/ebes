@@ -86,7 +86,7 @@ CREATE TABLE `users` (
   `lname` varchar(30) NOT NULL,
   `email` varchar(50) DEFAULT NULL,
   `password` varchar(200) DEFAULT NULL,
-  `isAdmin` tinyint(1) DEFAULT NULL,
+  `isCustomer` tinyint(1) DEFAULT NULL,
   `createdDate` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -94,7 +94,7 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`userId`, `fname`, `lname`, `email`, `password`, `isAdmin`, `createdDate`) VALUES
+INSERT INTO `users` (`userId`, `fname`, `lname`, `email`, `password`, `isCustomer`, `createdDate`) VALUES
 (2, 'Vivek', 'Roy', 'vivek@scwebtech.com', '$2a$10$tng7CsUF/uwxA6Qg5WIXp.JL6d0rN5298X8VDRXdsxJp2YEullQD2', 1, '2025-01-10 07:36:47');
 
 --

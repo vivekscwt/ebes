@@ -9,7 +9,3 @@ exports.getRefreshToken = (req, res) => {
          res.status(500).send("Error Fetching Token");
      });
 };
-
-
-
-

@@ -35,8 +35,8 @@ exports.refreshToken = (refreshToken) => {
                 reject(err);
             } else {
                 // Generate new access and refresh tokens
-                const { userId, isAdmin } = decoded;
-                const newTokens = this.generateAccessAndRefreshToken({ userId, isAdmin });
+                const { userId, isCustomer } = decoded;
+                const newTokens = this.generateAccessAndRefreshToken({ userId, isCustomer });
                 resolve(newTokens);
             }
         });

@@ -1,6 +1,6 @@
 // cartModel.js
 
-const pool = require("../database/connection");
+const pool = require("../database/connection.js-old");
 
 exports.getShoppingCart = (userId) => {
     return new Promise((resolve, reject) => {
