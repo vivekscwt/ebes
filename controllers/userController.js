@@ -3,23 +3,32 @@ const User = db.User;
 const bcrypt = require("bcrypt");
 
 const register = async (req, res) => {
-  const { email, password, isCustomer, fname, lname } = req.body;
+  const { email, password, isCustomer, fname, lname, phone } = req.body;
 
   try {
     // Validate request
-    if (!email || !password || !fname || !lname) {
+    if (!email || !password || !fname || !lname || !phone) {
       return res.status(400).json({
         success: false,
-        message: "All fields (email, password, fname, lname) are required.",
+        message: "All fields (email, phone, password, fname, lname) are required.",
       });
     }
 
     // Check if the email is already registered
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
+    const emailExists = await User.findOne({ where: { email } });
+    if (emailExists) {
       return res.status(409).json({
         success: false,
         message: "Email is already registered.",
+      });
+    }
+
+    // Check if the phone is already registered
+    const phoneExists = await User.findOne({ where: { phone } });
+    if (phoneExists) {
+      return res.status(409).json({
+        success: false,
+        message: "Phone is already registered.",
       });
     }
 
