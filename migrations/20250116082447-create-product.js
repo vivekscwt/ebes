@@ -18,6 +18,9 @@ module.exports = {
       content: {
         type: Sequelize.TEXT
       },
+      productImage: {
+        type: Sequelize.STRING
+      },
       priceRegular: {
         type: Sequelize.FLOAT
       },

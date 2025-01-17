@@ -6,20 +6,44 @@ function save(req, res){
         title: req.body.title,
         excerpt: req.body.excerpt,
         content: req.body.content,
+        productImage: req.body.productImage,
         priceRegular: req.body.priceRegular,
         priceOffer: req.body.priceOffer,
-        productAuthor: req.userData.user
+        productAuthor: req.userData.userId
     }
 
     const schema = {
         title: {type:"string", optional: false, max: "200"},
-        excerpt: {type: "text", optional: true, max: "500"},
-        content: {type: "text", optional: false},
+        excerpt: {type: "string", optional: true, max: "500"},
+        content: {type: "string", optional: false},
+        productImage: {type: "string", optional: true},
         priceRegular: {type: "number", optional: false},
-        priceOffer: {type: "number", optional: true},
-    }
-    
-    const v = new Validator();
+        priceOffer: { 
+            type: "number", 
+            optional: true,
+            custom: (value, errors, schema, field, parent) => {
+                // Ensure priceOffer is less than priceRegular
+                if (value !== undefined && parent.priceRegular !== undefined) {
+                    // Check if priceOffer is greater than or equal to priceRegular
+                    if (value >= parent.priceRegular) {
+                        errors.push({
+                            type: "priceOfferGreater", 
+                            actual: value, 
+                            field 
+                        });
+                    }
+                }
+                return value;
+            },
+        },
+    };
+
+    // Custom messages for errors
+    const messages = {
+        priceOfferGreater: "Price offer ({actual}) must be less than price regular.",
+    };
+
+    const v = new Validator({ messages });
     const validationResponse = v.validate(product, schema);
 
     if(validationResponse !== true){
@@ -29,27 +53,51 @@ function save(req, res){
         });
     }
     
-    models.ProductCategory.findByPk(req.body.category_id).then(result => {
-        if(result !== null){
-            models.Product.create(product).then(result => {
-                res.status(201).json({
-                    message: "Product created successfully",
-                    data: result
-                });
-            }).catch(error => {
-                res.status(500).json({
-                    message: "Something went wrong",
-                    error: error
-                });
-            });
-        }else{
-            res.status(400).json({
-                message: "Invalid Category ID"
-            });
-        }
+    // Check if category exists before creating product
+    // models.ProductCategory.findByPk(req.body.category_id)
+    // .then((category) => {
+    //     if (!category) {
+    //         return res.status(400).json({
+    //             message: "Invalid Category ID",
+    //         });
+    //     }
+
+    //     // Create product
+    //     models.Product.create(product)
+    //         .then((result) => {
+    //             res.status(201).json({
+    //                 message: "Product created successfully",
+    //                 data: result,
+    //             });
+    //         })
+    //         .catch((error) => {
+    //             res.status(500).json({
+    //                 message: "Something went wrong",
+    //                 error: error.message, // Return the error message
+    //             });
+    //         });
+    // })
+    // .catch((error) => {
+    //     res.status(500).json({
+    //         message: "Failed to fetch category",
+    //         error: error.message, // Return the error message
+    //     });
+    // });
+
+    // Directly create product (bypassing category check)
+    models.Product.create(product)
+    .then((result) => {
+        res.status(201).json({
+            message: "Product created successfully",
+            data: result,
+        });
+    })
+    .catch((error) => {
+        res.status(500).json({
+            message: "Something went wrong",
+            error: error.message, // Return the error message
+        });
     });
-
-
 }
 
 function show(req, res){
@@ -67,7 +115,8 @@ function show(req, res){
         }
     }).catch(error => {
         res.status(500).json({
-            message: "Something went wrong!"
+            message: "Something went wrong!",
+            error: error.message,
         })
     });
 }
@@ -148,11 +197,65 @@ function destroy(req, res){
         });
     });
 }
- 
+
+
+//--For Product Category--//
+function saveCategory(req, res){
+    const productCat = {
+        categoryName: req.body.categoryName
+    }
+
+    const productCatSchema = {
+        categoryName: {type:"string", optional: false, max: "100"}
+    };
+
+    const v = new Validator();
+    const validationResponse = v.validate(productCat, productCatSchema);
+
+    if(validationResponse !== true){
+        return res.status(400).json({
+            message: "Validation failed",
+            errors: validationResponse
+        });
+    }
+
+    //Check if category already exists
+    models.ProductCategory.findOne({ where: { categoryName:req.body.categoryName } })
+    .then((categoryExists) => {
+        if (categoryExists) {
+            return res.status(409).json({
+                success: false,
+                message: "categoryName is already exist!",
+            });
+        }
+
+        return models.ProductCategory.create(productCat);
+    })
+    .then((newproductCat) => {
+        res.status(201).json({
+            success: true,
+            message: "Category created successfully",
+            data: {
+                id: newproductCat.id,
+                categoryName: newproductCat.categoryName,
+            },
+        });
+    })
+    .catch((error) => {
+        console.error("Error in user registration:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Something went wrong!",
+            error: error.message,
+        });
+    });
+}
+
 module.exports = {
     save: save,
     show: show,
     index: index,
     update: update,
-    destroy: destroy
+    destroy: destroy,
+    saveCategory: saveCategory
 }

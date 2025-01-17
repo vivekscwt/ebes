@@ -1,13 +1,16 @@
 const express = require('express');
-const postsController = require('../controllers/product.controller');
+const productController = require('../controllers/product.controller');
 const checkAuthMiddleware = require('../middleware/check-auth');
 
 const router = express.Router();
 
-router.post("/", checkAuthMiddleware.checkAuth, postsController.save);
-router.get("/", postsController.index);
-router.get("/:id", postsController.show);
-router.patch("/:id", checkAuthMiddleware.checkAuth, postsController.update);
-router.delete("/:id", checkAuthMiddleware.checkAuth, postsController.destroy);
+router.post("/", checkAuthMiddleware.checkAuth, productController.save);
+router.get("/", productController.index);
+router.get("/:id", productController.show);
+router.patch("/:id", checkAuthMiddleware.checkAuth, productController.update);
+router.delete("/:id", checkAuthMiddleware.checkAuth, productController.destroy);
+
+//Category
+router.post("/category", checkAuthMiddleware.checkAuth, productController.saveCategory);
 
 module.exports = router;
