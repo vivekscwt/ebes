@@ -28,7 +28,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false, // Set NOT NULL
       defaultValue: true, // Default value 1 (true)
     },
-    productAuthor: DataTypes.INTEGER
+    productAuthor: DataTypes.INTEGER,
+    status: {
+      type: DataTypes.INTEGER,
+      defaultValue: 1, // Set default value to 1
+    },
   }, {
     sequelize,
     modelName: 'Product',
