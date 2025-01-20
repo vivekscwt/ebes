@@ -206,8 +206,20 @@ function destroy(req, res) {
 
     const id = req.params.id;
     const userId = req.userData.userId;
+    console.log("id",id);
+    console.log("userId",userId);
 
-    models.Product.destroy({ where: { id: id, productAuthor: userId } }).then(result => {
+    models.Product.update(
+            { 
+              status: 'inActive',
+            },
+            { 
+              where: { 
+                id: id, 
+                productAuthor: userId 
+              } 
+            }
+          ).then(result => {
         models.sequelize.query(
             "DELETE FROM ProductCategoryMaps WHERE productId = :productId", 
             {
