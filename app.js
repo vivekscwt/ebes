@@ -30,13 +30,13 @@ const PORT = process.env.PORT || 3001;
 
 async function hashPassword(password) {
     try {
-      const salt = await bcryptjs.genSalt(10); // Generate salt
-      const hashedPassword = await bcryptjs.hash(password, salt); // Hash password
+      const salt = await bcryptjs.genSalt(10); 
+      const hashedPassword = await bcryptjs.hash(password, salt);
       console.log('Hashed Password:', hashedPassword);
-      return hashedPassword; // Return hashed password (store in DB)
+      return hashedPassword; 
     } catch (error) {
       console.error('Error hashing password:', error);
-      throw error; // Re-throw the error for further handling
+      throw error; 
     }
   }
 
