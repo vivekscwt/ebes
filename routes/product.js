@@ -12,5 +12,6 @@ router.delete("/:id", checkAuthMiddleware.checkAuth, productController.destroy);
 
 //Category
 router.post("/category", checkAuthMiddleware.checkAuth, productController.saveCategory);
+router.patch("/category/updatecategory", checkAuthMiddleware.checkAuth, productController.updateCategory);
 
 module.exports = router;
