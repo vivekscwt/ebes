@@ -28,50 +28,6 @@ app.use("/api/images", imageRoute);
 
 const PORT = process.env.PORT || 3001;
 
-async function hashPassword(password) {
-    try {
-      const salt = await bcryptjs.genSalt(10); 
-      const hashedPassword = await bcryptjs.hash(password, salt);
-      console.log('Hashed Password:', hashedPassword);
-      return hashedPassword; 
-    } catch (error) {
-      console.error('Error hashing password:', error);
-      throw error; 
-    }
-  }
-
-  const initializeDatabase = async () => {
-    try {
-      await Admin.sync(); // Ensures the table exists
-      const adminCount = await Admin.count();
-  
-      if (adminCount === 0) {
-        const password = "dev2.scwt@gmail.com";
-        const hashedPassword = await hashPassword(password); // Await the hashed password
-  
-        await Admin.create({
-          fname: "Moumita",
-          lname: "Das",
-          email: "dev2.scwt@gmail.com",
-          phone: "6294601754",
-          password: hashedPassword, // Use the awaited hashed password
-          userType: "admin",
-          role: "superadmin",
-        });
-        console.log("Default admin record inserted.");
-      } else {
-        console.log("Admins table already has records.");
-      }
-    } catch (error) {
-      console.error("Error during database initialization:", error);
-    }
-  };
-  
-  initializeDatabase();
-  
-
-
-
 //User.sync({ alter: true })
 
 app.listen(PORT, () => {
