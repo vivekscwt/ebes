@@ -72,12 +72,14 @@ function save(req, res) {
                         })
                             .then(() => {
                                 res.status(201).json({
+                                    success: true,
                                     message: "Product created successfully",
                                     data: result,
                                 });
                             })
                     } else {
                         res.status(400).json({
+                            success: false,
                             message: "Category does not exist.",
                         });
                     }
@@ -99,14 +101,20 @@ function show(req, res) {
         include: [models.ProductCategory, models.User]
     }).then(result => {
         if (result) {
-            res.status(200).json(result);
+            res.status(200).json({
+                success: true,
+                message: "Product fetched succesfully.",
+                result: result
+        });
         } else {
             res.status(404).json({
+                success: false,
                 message: "Product not found!"
             })
         }
     }).catch(error => {
         res.status(500).json({
+            success: false,
             message: "Something went wrong!",
             error: error.message,
         })
@@ -115,7 +123,11 @@ function show(req, res) {
 
 function index(req, res) {
     models.Product.findAll().then(result => {
-        res.status(200).json(result);
+        res.status(200).json({
+            success: true,
+            message: "Product fetched succesfully.",
+            result: result
+        });
     }).catch(error => {
         res.status(500).json({
             message: "Something went wrong!"
@@ -175,25 +187,29 @@ function update(req, res) {
                                     type: QueryTypes.UPDATE
                                 })
                                 .then(() => {
-                                    res.status(200).json({
+                                    return res.status(200).json({
+                                        success: true,
                                         message: "Product updated successfully",
                                         data: updatedProduct
                                     });
                                 })
                         } else {
-                            res.status(400).json({
+                           return res.status(400).json({
+                                success: false,
                                 message: "Category does not exist",
                             });
                         }
                     }).catch(error => {
-                        res.status(200).json({
+                        return res.status(200).json({
+                            success: false,
                             message: "Something went wrong",
                             error: error
                         });
                     })
             })
         } else {
-            res.status(400).json({
+            return res.status(400).json({
+                success: false,
                 message: "Category does not exist."
             });
         }
@@ -228,6 +244,7 @@ function destroy(req, res) {
                 type: QueryTypes.DELETE
         }).then(() => {
                 res.status(200).json({
+                    success: true,
                     message: "Product deleted successfully"
                 });
             })
@@ -235,6 +252,7 @@ function destroy(req, res) {
         console.log("error", error);
 
         res.status(200).json({
+            success: false,
             message: "Something went wrong",
             error: error
         });
@@ -244,7 +262,7 @@ function destroy(req, res) {
 
 //--For Product Category--//
 const saveCategory = async (req, res) => {
-    const { categoryName } = req.body;
+    const { categoryName, categoryImage } = req.body;
   
     // Input validation schema
     const productCatSchema = {
@@ -275,7 +293,7 @@ const saveCategory = async (req, res) => {
       }
   
       // Create new category
-      const newCategory = await models.ProductCategory.create({ categoryName });
+      const newCategory = await models.ProductCategory.create({ categoryName,categoryImage});
   
       return res.status(201).json({
         success: true,
@@ -283,6 +301,7 @@ const saveCategory = async (req, res) => {
         data: {
           id: newCategory.id,
           categoryName: newCategory.categoryName,
+          categoryImage: newCategory.categoryImage
         },
       });
     } catch (error) {
@@ -299,7 +318,7 @@ const saveCategory = async (req, res) => {
 //--For Product Update Category--//
 
 const updateCategory = async (req, res) => {
-    const { categoryId, categoryName } = req.body;
+    const { categoryId, categoryName, categoryImage } = req.body;
   
     // Input validation schema
     const categorySchema = {
@@ -347,6 +366,7 @@ const updateCategory = async (req, res) => {
   
       // Update the category name
       category.categoryName = categoryName;
+      category.categoryImage = categoryImage
       await category.save();
   
       return res.status(200).json({
@@ -355,6 +375,7 @@ const updateCategory = async (req, res) => {
         data: {
           id: category.id,
           categoryName: category.categoryName,
+          categoryImage: category.categoryImage
         },
       });
     } catch (error) {
@@ -367,6 +388,30 @@ const updateCategory = async (req, res) => {
       });
     }
   };
+//categoryListing
+
+const categoryListing = async (req, res) => {
+    try {
+        const categories = await models.ProductCategory.findAll();
+
+        return res.status(200).json({
+            success: true,
+            message: "Category listing fetched successfully.",
+            result: categories
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong!",
+            error: error.message // Show detailed error message
+        });
+    }
+};
+
+
+
+
 
 module.exports = {
     save: save,
@@ -375,5 +420,6 @@ module.exports = {
     update: update,
     destroy: destroy,
     saveCategory: saveCategory,
-    updateCategory: updateCategory
+    updateCategory: updateCategory,
+    categoryListing: categoryListing
 }

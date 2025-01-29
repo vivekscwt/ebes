@@ -138,9 +138,10 @@ const login = async (req, res) => {
       {
         email: user.email,
         userId: user.id,
+        isCustomer: user.isCustomer
       },
       process.env.JWT_KEY,
-      { expiresIn: "1h" } // Token expiration time
+      { expiresIn: "24h" } // Token expiration time
     );
 
     // Return successful response with the token
@@ -207,9 +208,10 @@ const adminLogin = async (req, res) => {
       {
         email: admin.email,
         userId: admin.id,
+        userType: admin.userType
       },
       process.env.JWT_KEY,
-      { expiresIn: "1h" } // Token expiration time
+      { expiresIn: "24h" } // Token expiration time
     );
 
     // Return successful response with the token

@@ -1,17 +1,20 @@
 const express = require('express');
 const productController = require('../controllers/product.controller');
 const checkAuthMiddleware = require('../middleware/check-auth');
+const checkAdminMiddleware = require('../middleware/check-admin');
 
 const router = express.Router();
 
-router.post("/", checkAuthMiddleware.checkAuth, productController.save);
+router.post("/", checkAdminMiddleware.checkAdmin, productController.save);
 router.get("/", productController.index);
 router.get("/:id", productController.show);
-router.patch("/:id", checkAuthMiddleware.checkAuth, productController.update);
-router.delete("/:id", checkAuthMiddleware.checkAuth, productController.destroy);
+router.patch("/:id", checkAdminMiddleware.checkAdmin, productController.update);
+router.delete("/:id", checkAdminMiddleware.checkAdmin, productController.destroy);
 
 //Category
-router.post("/category", checkAuthMiddleware.checkAuth, productController.saveCategory);
-router.patch("/category/updatecategory", checkAuthMiddleware.checkAuth, productController.updateCategory);
+router.post("/category", checkAdminMiddleware.checkAdmin, productController.saveCategory);
+router.patch("/category/updatecategory", checkAdminMiddleware.checkAdmin, productController.updateCategory);
+router.patch("/category/updatecategory", checkAdminMiddleware.checkAdmin, productController.categoryListing);
+
 
 module.exports = router;
