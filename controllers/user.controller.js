@@ -140,7 +140,7 @@ const login = async (req, res) => {
         userId: user.id,
       },
       process.env.JWT_KEY,
-      { expiresIn: "1h" } // Token expiration time
+      { expiresIn: "30d" } // Token expiration time
     );
 
     // Return successful response with the token
