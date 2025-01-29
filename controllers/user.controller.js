@@ -141,7 +141,7 @@ const login = async (req, res) => {
         isCustomer: user.isCustomer
       },
       process.env.JWT_KEY,
-      { expiresIn: "24h" } // Token expiration time
+      { expiresIn: "30d" } // Token expiration time
     );
 
     // Return successful response with the token
@@ -211,7 +211,7 @@ const adminLogin = async (req, res) => {
         userType: admin.userType
       },
       process.env.JWT_KEY,
-      { expiresIn: "24h" } // Token expiration time
+      { expiresIn: "30d" } // Token expiration time
     );
 
     // Return successful response with the token
