@@ -11,7 +11,8 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Product.belongsTo(models.Admin, { foreignKey: 'productAuthor' });
+       Product.belongsTo(models.Admin, { foreignKey: 'productAuthor' });
+       Product.belongsTo(models.User);
       Product.belongsToMany(models.ProductCategory, { through: 'ProductCategoryMap', foreignKey: 'productId'});
       Product.hasMany(models.ProductCategoryMap, { foreignKey: 'productId' });
     }
@@ -29,6 +30,7 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: true, // Default value 1 (true)
     },
     productAuthor: DataTypes.INTEGER,
+    UserId: DataTypes.INTEGER,
     status: {
       type: DataTypes.INTEGER,
       defaultValue: 1, // Set default value to 1

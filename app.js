@@ -7,6 +7,7 @@ const bcryptjs = require('bcryptjs');
 const userRoutes = require("./routes/user");
 const productRoutes = require("./routes/product");
 const imageRoute = require('./routes/images');
+const categoriesRoutes = require('./routes/categoriesRoutes')
 const { Admin } = require("./models");
 // const orderRoutes = require("./routes/order");
 // const cartRoutes = require("./routes/cart");
@@ -23,6 +24,7 @@ app.use('/uploads', express.static('uploads'));
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/images", imageRoute);
+app.use("/api/categories", categoriesRoutes);
 // app.use("/api/orders", orderRoutes);
 // app.use("/api/cart", cartRoutes);
 
