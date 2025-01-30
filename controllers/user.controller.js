@@ -82,7 +82,7 @@ const register = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: "User created successfully",
-      data: {
+      result: {
         id: newUser.id,
         fname: newUser.fname,
         lname: newUser.lname,
@@ -149,7 +149,7 @@ const login = async (req, res) => {
       success: true,
       message: "Authentication successful!",
       token: token,
-      data:{
+      result:{
         id: user.id,
         fname: user.fname,
         lname: user.lname,
@@ -219,7 +219,7 @@ const adminLogin = async (req, res) => {
       success: true,
       message: "Authentication successful!",
       token: token,
-      data:{
+      result:{
         id: admin.id,
         fname: admin.fname,
         lname: admin.lname,
