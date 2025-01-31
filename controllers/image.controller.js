@@ -1,7 +1,6 @@
 const models = require('../models');
 
-function upload(req, res) {
-    console.log(req.file);
+async function upload(req, res) {
 
     // Check if the file is provided
     if (!req.file) {
@@ -13,6 +12,8 @@ function upload(req, res) {
 
     // Check if the file has a filename
     if (req.file.filename) {
+        const adding_image = await models.Media.create({path: req.file.path});
+        
         return res.status(201).json({
             success: true,
             message: "Image uploaded successfully.",
