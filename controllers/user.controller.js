@@ -3,6 +3,7 @@ const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const { Sequelize } = require('sequelize');
+const { Op } = require("sequelize");
 
 const register = async (req, res) => {
   const { fname, lname, email, password, phone, isCustomer } = req.body;
@@ -310,12 +311,51 @@ const changePassword = async (req, res) => {
   }
 };
 
+const allCount = async (req, res) => {
+  try{
+    const totaluserscount = await models.User.count();
+    const registereduserscount = await models.User.count({
+      where: {
+        isCustomer:1
+      }
+    })
+    const guestuserscount = await models.User.count({
+      where: {
+        isCustomer: { [Op.ne]: 1 } 
+      }
+    })
+    const totalProducts = await models.Product.count();
+    // const totalOrders = await models.Orders.count();
+
+    return res.status(200).json({
+      success: true,
+      result:{
+        totaluserscount: totaluserscount,
+        registereduserscount: registereduserscount,
+        guestuserscount: guestuserscount,
+        totalProducts: totalProducts,
+        // totalOrders: totalOrders
+      },
+      message: "No of users fetched successfully.",
+    });
+
+  } catch(error){
+    console.error("Error when counting the users:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while counting the users.",
+      error: error.message,
+    });
+  }
+}
+
 
 
 module.exports = {
   register,
   login,
   adminLogin: adminLogin,
-  changePassword: changePassword
+  changePassword: changePassword,
+  allCount: allCount
 };
 
