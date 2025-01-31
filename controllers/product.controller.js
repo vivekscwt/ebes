@@ -61,7 +61,7 @@ function save(req, res) {
                 .then((categoryExists) => {
                     if (categoryExists) {
                         models.sequelize.query(
-                            "INSERT INTO ProductCategoryMaps (productId, CategoryId, createdAt, updatedAt) VALUES (:productId, :CategoryId, :createdAt, :updatedAt)", {
+                            "INSERT INTO productcategorymaps (productId, CategoryId, createdAt, updatedAt) VALUES (:productId, :CategoryId, :createdAt, :updatedAt)", {
                             replacements: {
                                 productId: result.dataValues.id,
                                 CategoryId: req.body.productCategory,
@@ -216,7 +216,7 @@ function update(req, res) {
                     .then((categoryExists) => {
                         if (categoryExists) {
                             models.sequelize.query(
-                                `UPDATE ProductCategoryMaps 
+                                `UPDATE productcategorymaps 
                          SET CategoryId = :CategoryId, updatedAt = :updatedAt 
                          WHERE productId = :productId`,
                                 {
@@ -273,7 +273,7 @@ function destroy(req, res) {
             }
           ).then(result => {
         models.sequelize.query(
-            "DELETE FROM ProductCategoryMaps WHERE productId = :productId", 
+            "DELETE FROM productcategorymaps WHERE productId = :productId", 
             {
                 replacements: {
                     productId: id 
