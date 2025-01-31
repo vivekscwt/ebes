@@ -20,4 +20,5 @@ router.post("/change-password", checkAuthMiddleware.checkAuth, userController.ch
 //Route for total users count
 router.get("/user-count", checkAdminMiddleware.checkAdmin, userController.allCount);
 
+
 module.exports = router;
