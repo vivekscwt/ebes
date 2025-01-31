@@ -55,6 +55,14 @@ function save(req, res) {
             errors: validationResponse
         });
     }
+    const existingProduct = models.Product.findOne({ where: { title: req.body.title } });
+    
+    if (existingProduct) {
+        return res.status(409).json({
+            success: false,
+            message: "Product already exists!",
+        });
+    }
     models.Product.create(product)
         .then((result) => {
             return models.ProductCategory.findOne({ where: { id: req.body.productCategory } })
