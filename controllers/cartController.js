@@ -8,7 +8,11 @@ exports.getShoppingCart = (req, res) => {
     const userId = req.params.userId;
     cartModel.getShoppingCart(userId)
         .then(result => {
-            res.send(result);
+            res.send({
+                success: true,
+                message: "Shopping cart fetched successfully.",
+                result: result
+            })
         })
         .catch(err => {
             console.error(err.message);
@@ -20,7 +24,11 @@ exports.addToCart = (req, res) => {
     const { customerId, productId, quantity, isPresent } = req.body;
     cartModel.addToCart(customerId, productId, quantity, isPresent)
         .then(result => {
-            res.send(result);
+            res.send({
+                success: true,
+                message: "Cart added successfully.",
+                result: result
+            })
         })
         .catch(err => {
             console.error(err.message);
