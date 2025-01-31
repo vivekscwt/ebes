@@ -19,4 +19,7 @@ router.put("/update/:id", orderController.updateOrder);
 // Route to get past orders by customerId
 router.get("/myPastOrders/:id", orderController.getPastOrdersByCustomerID);
 
+//latest orders
+// router.get("/latest-orders", orderController.get)
+
 module.exports = router;

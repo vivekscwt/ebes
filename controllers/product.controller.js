@@ -3,7 +3,7 @@ const { Op } = require("sequelize");
 const models = require('../models');
 const { QueryTypes } = require('sequelize');
 
-function save(req, res) {
+async function save(req, res) {
     const product = {
         title: req.body.title,
         excerpt: req.body.excerpt,
@@ -55,13 +55,21 @@ function save(req, res) {
             errors: validationResponse
         });
     }
+    const existingProduct = await models.Product.findOne({ where: { title: req.body.title } });
+
+    if (existingProduct) {
+        return res.status(409).json({
+            success: false,
+            message: "Product already exists!",
+        });
+    }
     models.Product.create(product)
         .then((result) => {
             return models.ProductCategory.findOne({ where: { id: req.body.productCategory } })
                 .then((categoryExists) => {
                     if (categoryExists) {
                         models.sequelize.query(
-                            "INSERT INTO ProductCategoryMaps (productId, CategoryId, createdAt, updatedAt) VALUES (:productId, :CategoryId, :createdAt, :updatedAt)", {
+                            "INSERT INTO productcategorymaps (productId, CategoryId, createdAt, updatedAt) VALUES (:productId, :CategoryId, :createdAt, :updatedAt)", {
                             replacements: {
                                 productId: result.dataValues.id,
                                 CategoryId: req.body.productCategory,
@@ -216,7 +224,7 @@ function update(req, res) {
                     .then((categoryExists) => {
                         if (categoryExists) {
                             models.sequelize.query(
-                                `UPDATE ProductCategoryMaps 
+                                `UPDATE productcategorymaps 
                          SET CategoryId = :CategoryId, updatedAt = :updatedAt 
                          WHERE productId = :productId`,
                                 {
@@ -263,17 +271,17 @@ function destroy(req, res) {
 
     models.Product.update(
             { 
-              status: 'inActive',
+              status: 0,
             },
             { 
               where: { 
                 id: id, 
-                productAuthor: userId 
+                // productAuthor: userId 
               } 
             }
           ).then(result => {
         models.sequelize.query(
-            "DELETE FROM ProductCategoryMaps WHERE productId = :productId", 
+            "DELETE FROM productcategorymaps WHERE productId = :productId", 
             {
                 replacements: {
                     productId: id 

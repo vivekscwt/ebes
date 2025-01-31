@@ -6,7 +6,7 @@ const checkAdminMiddleware = require('../middleware/check-admin');
 
 const router = express.Router();
 
-router.post('/upload', checkAuth.checkAuth, imageUploader.upload.single('image'), imageController.upload);
+router.post('/upload', checkAdminMiddleware.checkAdmin, imageUploader.upload.single('image'), imageController.upload);
 
 router.post('/add-image',checkAdminMiddleware.checkAdmin, imageController.addImage);
 

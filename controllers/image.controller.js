@@ -1,7 +1,6 @@
 const models = require('../models');
 
-function upload(req, res) {
-    console.log(req.file);
+async function upload(req, res) {
 
     // Check if the file is provided
     if (!req.file) {
@@ -13,6 +12,8 @@ function upload(req, res) {
 
     // Check if the file has a filename
     if (req.file.filename) {
+        const adding_image = await models.Media.create({path: req.file.path});
+        
         return res.status(201).json({
             success: true,
             message: "Image uploaded successfully.",
@@ -71,27 +72,25 @@ async function getImages(req, res){
 
 async function deleteImage(req, res) {
     try {
-        let { image_path } = req.body; 
+        const { ids } = req.body; 
+        console.log("ids",ids);
+        
 
-        if (!image_path) {
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
             return res.status(400).json({
                 success: false,
-                message: "Please provide the image path to delete the image.",
+                message: "Please provide an array of image IDs to delete.",
             });
         }
 
-        if (!Array.isArray(image_path)) {
-            image_path = [image_path]; 
-        }
-
         const deletedCount = await models.Media.destroy({
-            where: { path: image_path } 
+            where: { id: ids }  
         });
 
         if (deletedCount === 0) {
             return res.status(404).json({
                 success: false,
-                message: "No images found with the provided path.",
+                message: "No images found with the provided IDs.",
             });
         }
 
@@ -101,13 +100,16 @@ async function deleteImage(req, res) {
         });
 
     } catch (error) {
-        console.error(error);
+        console.error("Error deleting images:", error);
         return res.status(500).json({
             success: false,
             message: "Something went wrong!",
+            error: error.message
         });
     }
 }
+
+
 
 
 
