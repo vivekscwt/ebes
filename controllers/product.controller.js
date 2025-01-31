@@ -3,7 +3,7 @@ const { Op } = require("sequelize");
 const models = require('../models');
 const { QueryTypes } = require('sequelize');
 
-function save(req, res) {
+async function save(req, res) {
     const product = {
         title: req.body.title,
         excerpt: req.body.excerpt,
@@ -53,6 +53,14 @@ function save(req, res) {
         return res.status(400).json({
             message: "Validation failed",
             errors: validationResponse
+        });
+    }
+    const existingProduct = await models.Product.findOne({ where: { title: req.body.title } });
+
+    if (existingProduct) {
+        return res.status(409).json({
+            success: false,
+            message: "Product already exists!",
         });
     }
     models.Product.create(product)
@@ -263,12 +271,12 @@ function destroy(req, res) {
 
     models.Product.update(
             { 
-              status: 'inActive',
+              status: 0,
             },
             { 
               where: { 
                 id: id, 
-                productAuthor: userId 
+                // productAuthor: userId 
               } 
             }
           ).then(result => {
