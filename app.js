@@ -24,7 +24,7 @@ app.use('/uploads', express.static('uploads'));
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/images", imageRoute);
-app.use("/api/categories", categoriesRoutes);
+//app.use("/api/categories", categoriesRoutes);
 // app.use("/api/orders", orderRoutes);
 // app.use("/api/cart", cartRoutes);
 
