@@ -9,7 +9,7 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      time: {
+      availability_time: {
         type: Sequelize.STRING
       },
       createdAt: {

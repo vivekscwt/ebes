@@ -159,6 +159,9 @@ function show(req, res) {
 // }
 function index(req, res) {
     models.Product.findAll({
+        where: {
+            status: 1
+        },
         include: [
             {
                 model: models.ProductCategory, 

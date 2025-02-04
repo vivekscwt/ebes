@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Time_management.init({
-    time: DataTypes.STRING
+    availability_time: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'Time_management',
