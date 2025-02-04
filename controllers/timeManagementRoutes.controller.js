@@ -7,7 +7,14 @@ const { QueryTypes } = require('sequelize');
 async function timeManagement(req, res){
     try{
         const {times} = req.body;
-        // var query = await models.time
+        var query = await models.Time_management.create({
+            times: times
+        })
+        return res.status(201).json({
+            success: true,
+            message: "Time added successfully.",
+            result: times
+          });
 
     } catch(error){
         res.status(200).json({
@@ -16,4 +23,8 @@ async function timeManagement(req, res){
             error: error
         });
     }
+}
+
+module.exports = {
+    timeManagement: timeManagement
 }
