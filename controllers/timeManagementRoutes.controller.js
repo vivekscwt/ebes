@@ -7,6 +7,7 @@ const { QueryTypes } = require('sequelize');
 async function timeManagement(req, res){
     try{
         const {times} = req.body;
+        // var query = await models.time
 
     } catch(error){
         res.status(200).json({
@@ -15,6 +16,4 @@ async function timeManagement(req, res){
             error: error
         });
     }
-
-    
 }
