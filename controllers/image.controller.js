@@ -12,7 +12,7 @@ async function upload(req, res) {
 
     // Check if the file has a filename
     if (req.file.filename) {
-        const adding_image = await models.Media.create({path: req.file.path});
+        const adding_image = await models.Media.create({path: req.file.filename});
         
         return res.status(201).json({
             success: true,
