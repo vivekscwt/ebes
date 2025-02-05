@@ -1,6 +1,6 @@
 // cartController.js
 
-const cartModel = require("../models/cartModel");
+const models = require('../models');
 const { verifyToken } = require('../utils/token'); 
 
 
@@ -84,3 +84,51 @@ exports.buy = (req, res) => {
             return res.status(401).send('Unauthorized: Invalid token');
         });
 };
+
+exports.verifyCart = async (req, res) => {
+    try{
+        var {user_id, product_id, product_price} = req.body;
+
+        var cartQuery = await models.User_cart.findAll({
+            where:{
+                user_id: user_id
+            }
+        })
+        console.log("cartQuery.length", cartQuery.length);
+        
+        const updatedCart = {
+            product_id: product_id,
+            product_price: product_price
+        }
+        if(cartQuery.length>0){
+            var product = await models.User_cart.update(updatedCart,{
+                where:{
+                    user_id: user_id
+                }
+            })
+            return res.status(200).json({
+                success: true,
+                message: `user cart added successfully.`,
+                result: updatedCart
+            })
+        } else {
+            var product = await models.User_cart.create({
+                user_id: user_id,
+                product_id: product_id,
+                product_price: product_price
+            })
+            return res.status(200).json({
+                success: true,
+                message: `user cart added successfully.`,
+                result: product
+            })
+        }
+    } catch(error){
+        console.error("Error deleting images:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong!",
+            error: error.message
+        });
+    }
+}

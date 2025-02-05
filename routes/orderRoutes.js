@@ -22,4 +22,8 @@ router.get("/myPastOrders/:id", orderController.getPastOrdersByCustomerID);
 //latest orders
 // router.get("/latest-orders", orderController.get)
 
+router.post("/handle-payment",orderController.handlePayment);
+
+
+
 module.exports = router;

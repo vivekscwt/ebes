@@ -1,7 +1,11 @@
 const express = require('express');
-const timeManagementController = require('../controllers/timeManagementRoutes.controller')
+const checkAuthMiddleware = require('../middleware/check-auth');
+const checkAdminMiddleware = require('../middleware/check-admin');
+const timeManagementController = require('../controllers/timeManagement.controller')
+
 const router = express.Router();
 
-router.get("/time-management/", timeManagementController.timeManagement)
+router.post("/time-management", checkAdminMiddleware.checkAdmin, timeManagementController.timeManagement);
+
 
 module.exports = router;

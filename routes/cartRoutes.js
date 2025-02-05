@@ -15,4 +15,6 @@ router.delete("/remove/:productId/:userId", cartController.removeFromCart);
 
 router.post("/buy/:id", cartController.buy);
 
+router.post("/verify-cart", cartController.verifyCart);
+
 module.exports = router;

@@ -79,7 +79,7 @@ async function deleteImage(req, res) {
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
             return res.status(400).json({
                 success: false,
-                message: "Please provide an array of image IDs to delete.",
+                message: "Please provide an array of image IDs to delete.", 
             });
         }
 
