@@ -11,7 +11,7 @@ const {
   BadrequestError,
 } = require("../libs/errorLib");
 // const { createTransaction } = require("../../../authorizeNet");
-const { createTransactionv2 } = require("../authorize.net");
+
 
 async function timeManagement(req, res){
     try{

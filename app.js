@@ -11,8 +11,7 @@ const categoriesRoutes = require('./routes/categoriesRoutes')
 const timeManagementRoutes = require('./routes/timeManagementRoutes')
 const cartRoutes = require('./routes/cartRoutes')
 const { Admin } = require("./models");
-// const orderRoutes = require("./routes/order");
-// const cartRoutes = require("./routes/cart");
+const orderRoutes = require("./routes/orderRoutes");
 
 const app = express();
 
@@ -28,7 +27,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/images", imageRoute);
 app.use("/api/categories", categoriesRoutes);
 app.use("/api/times", timeManagementRoutes)
-// app.use("/api/orders", orderRoutes);
+app.use("/api/orders", orderRoutes);
 app.use("/api/cart", cartRoutes);
 
 const PORT = process.env.PORT || 3001;

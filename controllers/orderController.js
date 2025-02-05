@@ -1,6 +1,10 @@
 // orderController.js
 
-const orderModel = require("../models/orderModel");
+const orderModel = require("../models/orders");
+const crypto = require('crypto');
+const { createTransactionv2 } = require("../authorize.net");
+const { sendSuccess, sendError } = require("../libs/responseLib");
+
 
 exports.getAllOrders = (req, res) => {
     orderModel.getAllOrders()
@@ -94,14 +98,82 @@ exports.getPastOrdersByCustomerID = (req, res) => {
         });
 };
 
-
 // Function to generate a token
-async function generateToken() {
+function generateToken() {
     const token = crypto.randomBytes(16).toString('hex');
       return token;
 }
 
-async function handlePayment(req, res, next){
+function invoice(billingData) {
+    return `
+      <table class="table_custome">
+    <tr>
+      <th style="border-bottom: 1px solid #000;   padding: 20px 20px;   display: block; width: 100%;">
+       <a href=""><img src="https://infoonmydate.com/assets/logo.jpg" alt="365logo" style="display: block; margin-right: auto; width: 24%;"></a>
+      </th>
+      <th style="text-align: left; border-bottom: 1px solid #000;   padding: 20px 20px;     display: block;    width: 100%;">
+        <h4 style="color: #000; font-style: 24px;     line-height: normal;">365 INSTANT CHECK - BILLING RECEIPT</h4>
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Date of Purchase: ${billingData.dateOfPurchase}</p>
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Customer Name: ${billingData.customerName}</p>
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 0px;">Customer Email: ${billingData.email}</p>
+      </th>
+      <th style="text-align: left; border-bottom: 1px solid #000;   padding: 20px 20px;     display: block;    width: 100%;">
+        <h4 style=" color: #000; font-style: 24px;     line-height: normal;">365 Instant Check: </h4>
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Search Description : ${billingData.searchType} Background Report</p>
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Quantity: ${billingData.quantity} </p>
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Unit Price: $${billingData.unitPrice} </p>
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 0px;">Total: $${billingData.total} </p>
+      </th>
+      <th style="text-align: left; border-bottom: 1px solid #000;   padding: 20px 20px;     display: block;    width: 100%;">
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Payment Details </p>
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Payment Method: ${billingData.paymentMethod} </p>
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Credit Card Number: ${billingData.cardNumber.replace(/.(?=.{4})/g, 'x')}</p>
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 0px;">Total Amount: $${billingData.total}</p>
+      </th>
+      <th style="text-align: left;  border-bottom: 1px solid #000;   padding: 20px 20px;     display: block;    width: 100%;">
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">This transaction has been
+          approved. </p>
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Auth Code: ${billingData.authCode} </p>
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Credit Card Number: ${billingData.cardNumber.replace(/.(?=.{4})/g, 'x')}</p>
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 0px;">Transaction ID: ${billingData.transactionId}
+        </p>
+      </th>
+      <th style="text-align: left; border-bottom: 1px solid #000;   padding: 20px 20px;     display: block;    width: 100%;">
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Thank you for your
+          purchase!</p>
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 0px;">You have successfully
+          purchased the 365 Instant Check Report listed above. If you have any questions or need further assistance,
+          feel free to contact us.
+        </p>
+      </th>
+      <th style="text-align: left;  border-bottom: 1px solid #000;   padding: 20px 20px;     display: block;    width: 100%;">
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">365 Instant Check </p>
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Customer Support: Support
+          Email: </p>
+        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 0px;">365InstantCheck.com
+        </p>
+      </th>
+    </tr>
+  </table>
+  
+      `
+  };
+
+  const sendEmail = async (to, subject, html) => {
+    // Check if all parameters are provided
+    if (!to || !subject || !html) {
+        throw new Error("All parameters (to, subject, html) must be provided");
+    }
+
+    const mailOptions = {
+        from: `"Ebes" <${process.env.MAIL_USER}>`,
+        to,
+        subject,
+        html,
+    };
+};
+
+exports.handlePayment = async (req, res, next) => {
   // Set common headers before any response is sent
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Access-Control-Allow-Headers", "x-payment-api-key");
@@ -197,7 +269,7 @@ async function handlePayment(req, res, next){
         //   }
 
           // Billing data
-          const billingData = {
+          var billingData = {
               dateOfPurchase: new Date().toISOString().split('T')[0],
               customerName: customerData?.firstName + " " + customerData?.lastName,
               email: email,
@@ -251,7 +323,3 @@ async function handlePayment(req, res, next){
   }
 };
 
-
-module.exports = {
-    handlePayment: handlePayment
-}

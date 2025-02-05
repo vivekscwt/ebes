@@ -1,5 +1,8 @@
 const jwt = require('jsonwebtoken');
 require('dotenv').config(); // Load environment variables from .env file
+const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 // Secret key for JWT
 const JWT_SECRET_KEY_ACCESS_TOKEN = process.env.JWT_SECRET_KEY_ACCESS_TOKEN; // Replace this with your secret key
@@ -42,3 +45,7 @@ exports.refreshToken = (refreshToken) => {
         });
     });
 };
+
+
+
+

@@ -349,6 +349,94 @@ const allCount = async (req, res) => {
   }
 }
 
+const usersOverMonth = async (req, res) => {
+  try {
+    const usersPerMonth = await models.User.findAll({
+      attributes: [
+        [Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"), "%M, %Y"), "month"], 
+        // [Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"), "%Y-%m-%d"), "month"],
+        [Sequelize.fn("COUNT", Sequelize.col("*")), "user_count"]
+      ],
+      group: ["month"],
+      order: [["month", "DESC"]],
+      raw: true 
+    });
+    return res.status(200).json({
+      success: true,
+      result:usersPerMonth,
+      message: "No of users per month fetched successfully.",
+    });
+  } catch (error) {
+    console.error("Error fetching user count per month:", error);
+  }
+}
+
+const forgotPassword = async (req, res) => {
+  const { email, current_password, new_password, confirm_password, user_type } = req.body;
+
+  try {
+    // Validate inputs
+    if (!email || !current_password || !new_password || !confirm_password) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields (email, current password, new password, confirm password, user type) are required.",
+      });
+    }
+
+    // Check if new password and confirm password match
+    if (new_password !== confirm_password) {
+      return res.status(400).json({
+        success: false,
+        message: "New password and confirm password do not match.",
+      });
+    }
+
+
+    if (!userModel) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user type. Must be 'customer' or 'admin'.",
+      });
+    }
+
+    // Find user by email
+    const user = await userModel.findOne({ where: { email } });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    // Compare current password with the stored password
+    const isPasswordMatch = await bcryptjs.compare(current_password, user.password);
+
+    if (!isPasswordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Current password does not match.",
+      });
+    }
+
+    // Hash the new password and update the user record
+    const hashedNewPassword = await bcryptjs.hash(new_password, 8);
+    user.password = hashedNewPassword;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password updated successfully.",
+    });
+  } catch (error) {
+    console.error("Error when changing the password:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while changing the password.",
+      error: error.message,
+    });
+  }
+};
 
 
 module.exports = {
@@ -356,6 +444,8 @@ module.exports = {
   login,
   adminLogin: adminLogin,
   changePassword: changePassword,
-  allCount: allCount
+  allCount: allCount,
+  usersOverMonth: usersOverMonth,
+  forgotPassword: forgotPassword
 };
 
