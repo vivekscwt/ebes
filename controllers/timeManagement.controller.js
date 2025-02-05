@@ -2,7 +2,16 @@ const Validator = require('fastest-validator');
 const { Op } = require("sequelize");
 const models = require('../models');
 const { QueryTypes } = require('sequelize');
-
+const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+const {
+  UnhandledError,
+  NotFoundError,
+  BadrequestError,
+} = require("../libs/errorLib");
+// const { createTransaction } = require("../../../authorizeNet");
+const { createTransactionv2 } = require("../authorize.net");
 
 async function timeManagement(req, res){
     try{
@@ -49,15 +58,9 @@ async function timeManagement(req, res){
     }
 }
 
-async function payment(req, res) {
-    try{
 
-    }
-    catch(error){
 
-    }
 
-}
 
 module.exports = {
     timeManagement: timeManagement
