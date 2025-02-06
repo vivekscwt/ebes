@@ -54,7 +54,7 @@ async function addImage(req, res){
 
 async function getImages(req, res){
     try{
-        const getImages = await models.Media.findAll();
+        const getImages = await models.Media.findAll({order: [['createdAt', 'DESC']]});
 
         return res.status(201).json({
             success: true,

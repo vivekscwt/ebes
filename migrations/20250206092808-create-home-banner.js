@@ -9,9 +9,6 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      bannerid: {
-        type: Sequelize.INTEGER
-      },
       heading: {
         type: Sequelize.TEXT
       },

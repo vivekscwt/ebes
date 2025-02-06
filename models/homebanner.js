@@ -14,7 +14,6 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   HomeBanner.init({
-    bannerid: DataTypes.INTEGER,
     heading: DataTypes.TEXT,
     content: DataTypes.TEXT,
     image: DataTypes.TEXT,
@@ -22,6 +21,7 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'HomeBanner',
+    tableName: 'homebanners',
   });
   return HomeBanner;
 };
