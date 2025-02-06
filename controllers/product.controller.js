@@ -195,6 +195,8 @@ function update(req, res) {
         content: req.body.content,
         priceRegular: req.body.priceRegular,
         priceOffer: req.body.priceOffer,
+        isPublic: req.body.isPublic,
+        productImage: req.body.productImage,
     }
 
     const userId = req.userData.userId;
