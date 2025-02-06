@@ -150,7 +150,7 @@ const login = async (req, res) => {
       success: true,
       message: "Authentication successful!",
       token: token,
-      result:{
+      result: {
         id: user.id,
         fname: user.fname,
         lname: user.lname,
@@ -194,6 +194,7 @@ const adminLogin = async (req, res) => {
       });
     }
 
+
     // Compare passwords
     const isMatch = await bcryptjs.compare(password, admin.password);
 
@@ -220,7 +221,7 @@ const adminLogin = async (req, res) => {
       success: true,
       message: "Authentication successful!",
       token: token,
-      result:{
+      result: {
         id: admin.id,
         fname: admin.fname,
         lname: admin.lname,
@@ -312,34 +313,39 @@ const changePassword = async (req, res) => {
 };
 
 const allCount = async (req, res) => {
-  try{
+  try {
     const totaluserscount = await models.User.count();
     const registereduserscount = await models.User.count({
       where: {
-        isCustomer:1
+        isCustomer: 1
       }
     })
     const guestuserscount = await models.User.count({
       where: {
-        isCustomer: { [Op.ne]: 1 } 
+        isCustomer: { [Op.ne]: 1 }
       }
     })
     const totalProducts = await models.Product.count();
-    // const totalOrders = await models.Orders.count();
+    const totalOrders = await models.Order_Product.count({
+      where: {
+        payment_status: "success"
+      }
+    });
 
     return res.status(200).json({
       success: true,
-      result:{
+      result: {
         totaluserscount: totaluserscount,
         registereduserscount: registereduserscount,
         guestuserscount: guestuserscount,
         totalProducts: totalProducts,
-        // totalOrders: totalOrders
+        totalOrders: totalOrders,
+        totalSales: 0
       },
       message: "No of users fetched successfully.",
     });
 
-  } catch(error){
+  } catch (error) {
     console.error("Error when counting the users:", error.message);
     return res.status(500).json({
       success: false,
@@ -353,17 +359,23 @@ const usersOverMonth = async (req, res) => {
   try {
     const usersPerMonth = await models.User.findAll({
       attributes: [
-        [Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"), "%M, %Y"), "month"], 
-        // [Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"), "%Y-%m-%d"), "month"],
-        [Sequelize.fn("COUNT", Sequelize.col("*")), "user_count"]
+        [Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"), "%b"), "month"], // Get month abbreviation
+        [Sequelize.fn("COUNT", Sequelize.col("id")), "user_count"]
       ],
-      group: ["month"],
-      order: [["month", "DESC"]],
-      raw: true 
+      where: Sequelize.where(
+        Sequelize.fn("YEAR", Sequelize.col("createdAt")),
+        Sequelize.fn("YEAR", Sequelize.fn("NOW"))
+      ),
+      group: [Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"), "%b")],
+      order: [[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"), "%m"), "ASC"]],
+      raw: true
     });
+    const labels = usersPerMonth.map(entry => entry.month);
+    const data = usersPerMonth.map(entry => entry.user_count);
+
     return res.status(200).json({
       success: true,
-      result:usersPerMonth,
+      result: data,
       message: "No of users per month fetched successfully.",
     });
   } catch (error) {
@@ -438,6 +450,73 @@ const forgotPassword = async (req, res) => {
   }
 };
 
+const adminEditProfile = async (req, res) => {
+  try {
+    const { first_name, last_name, new_password, confirm_password, email } = req.body;
+
+    if (new_password !== confirm_password) {
+      return res.status(400).json({
+        success: false,
+        message: "New password and confirm password do not match.",
+      });
+    }
+    const hashedNewPassword = await bcryptjs.hash(new_password, 8);
+
+    const admin = await models.Admin.findOne({ where: { email } });
+
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: "Admin not found.",
+      });
+    }
+
+    var query = await models.Admin.update(
+      { fname: first_name, lname: last_name, password: hashedNewPassword },
+      { where: { email: email } }
+    );
+    return res.status(200).json({
+      success: true,
+      message: "Admin profile updated successfully.",
+    });
+
+  } catch (error) {
+    console.error("Error when updating the profile:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while updating the profile.",
+      error: error.message,
+    });
+  }
+}
+
+const userListing = async (req, res) => {
+  try {
+    var type = req.params.type;
+    if (type == "registered") {
+      var userlisting = await models.User.findAll({ where: { isCustomer: 1 } });
+    }
+    else {
+      var userlisting = await models.User.findAll({ where: { isCustomer: 0 } });
+    }
+    return res.status(200).json({
+      success: true,
+      result: userlisting,
+      message: "users fetched successfully.",
+    });
+
+  } catch (error) {
+    console.error("Error when fetching users:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching users.",
+      error: error.message,
+    });
+  }
+}
+
+
+
 
 module.exports = {
   register,
@@ -446,6 +525,8 @@ module.exports = {
   changePassword: changePassword,
   allCount: allCount,
   usersOverMonth: usersOverMonth,
-  forgotPassword: forgotPassword
+  forgotPassword: forgotPassword,
+  adminEditProfile: adminEditProfile,
+  userListing: userListing
 };
 

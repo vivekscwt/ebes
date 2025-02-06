@@ -26,5 +26,11 @@ router.get("/user-count", checkAdminMiddleware.checkAdmin, userController.allCou
 //Route for counting users over month
 router.get("/users-over-month", checkAdminMiddleware.checkAdmin, userController.usersOverMonth);
 
+//Route for adminEditProfile
+router.patch("/admin-edit-profile",checkAdminMiddleware.checkAdmin, userController.adminEditProfile);
+
+//Route for userListing
+router.get("/user-list/:type",checkAdminMiddleware.checkAdmin, userController.userListing)
+
 
 module.exports = router;
