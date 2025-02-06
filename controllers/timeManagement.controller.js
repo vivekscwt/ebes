@@ -11,7 +11,7 @@ const {
   BadrequestError,
 } = require("../libs/errorLib");
 // const { createTransaction } = require("../../../authorizeNet");
-const { createTransactionv2 } = require("../authorize.net");
+
 
 async function timeManagement(req, res){
     try{
@@ -50,7 +50,7 @@ async function timeManagement(req, res){
         });
     } catch(error){
         console.log("errors",error);
-        res.status(200).json({
+        return res.status(200).json({
             success: false,
             message: "Something went wrong",
             error: error

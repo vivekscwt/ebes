@@ -3,9 +3,11 @@
 const express = require("express");
 const router = express.Router();
 const orderController = require("../controllers/orderController");
+const checkAdminMiddleware = require('../middleware/check-admin');
+const checkAuthMiddleware = require('../middleware/check-auth');
 
 // Route to get all orders
-router.get("/", orderController.getAllOrders);
+// router.get("/", orderController.getAllOrders);
 
 // Route to get order details by ID
 router.get("/:id", orderController.getOrderById);
@@ -22,8 +24,12 @@ router.get("/myPastOrders/:id", orderController.getPastOrdersByCustomerID);
 //latest orders
 // router.get("/latest-orders", orderController.get)
 
-router.post("/handle-payment",orderController.handlePayment);
+router.post("/handle-payment",checkAuthMiddleware.checkAuth,orderController.handlePayment);
 
+router.post("/create-order",checkAuthMiddleware.checkAuth,orderController.createdOrder);
 
+router.get("/orders-data",checkAdminMiddleware.checkAdmin, orderController.latestOrders)
+
+router.get("/order-details/:order_id",checkAdminMiddleware.checkAdmin, orderController.orderDetails)
 
 module.exports = router;
