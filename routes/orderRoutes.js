@@ -10,7 +10,7 @@ const checkAuthMiddleware = require('../middleware/check-auth');
 // router.get("/", orderController.getAllOrders);
 
 // Route to get order details by ID
-router.get("/:id", orderController.getOrderById);
+// router.get("/:id", orderController.getOrderById);
 
 // Route to get getProductsByOrder
 router.get("/getProductsByOrder/:id", orderController.getProductsByOrder);
