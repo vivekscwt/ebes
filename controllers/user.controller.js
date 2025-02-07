@@ -325,7 +325,11 @@ const allCount = async (req, res) => {
         isCustomer: { [Op.ne]: 1 }
       }
     })
-    const totalProducts = await models.Product.count();
+    const totalProducts = await models.Product.count({
+      where:{
+        status: 1
+      }
+    });
     const totalOrders = await models.Order_Product.count({
       where: {
         payment_status: "success"
@@ -359,23 +363,44 @@ const usersOverMonth = async (req, res) => {
   try {
     const usersPerMonth = await models.User.findAll({
       attributes: [
-        [Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"), "%b"), "month"], // Get month abbreviation
-        [Sequelize.fn("COUNT", Sequelize.col("id")), "user_count"]
+        [Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"), "%b"), "month"], 
+        [Sequelize.fn("COUNT", Sequelize.col("id")), "user_count"] 
       ],
       where: Sequelize.where(
         Sequelize.fn("YEAR", Sequelize.col("createdAt")),
-        Sequelize.fn("YEAR", Sequelize.fn("NOW"))
+        Sequelize.fn("YEAR", Sequelize.fn("NOW")) 
       ),
       group: [Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"), "%b")],
       order: [[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"), "%m"), "ASC"]],
       raw: true
     });
-    const labels = usersPerMonth.map(entry => entry.month);
-    const data = usersPerMonth.map(entry => entry.user_count);
+
+    const allMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    const userDataMap = Object.fromEntries(usersPerMonth.map(entry => [entry.month, entry.user_count]));
+
+    const labels = allMonths;
+    const data = allMonths.map(month => userDataMap[month] || 0)
 
     return res.status(200).json({
       success: true,
-      result: data,
+      result: {
+        monthly_registered_users: data,
+        monthly_sales: [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+      ]
+      },
       message: "No of users per month fetched successfully.",
     });
   } catch (error) {
