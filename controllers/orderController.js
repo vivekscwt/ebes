@@ -8,6 +8,7 @@ const models = require("../models")
 const { v4: uuidv4 } = require('uuid');
 const { QueryTypes } = require('sequelize');
 const { sequelize } = require('../models');  // Ensure the path is correct
+const { transporter } = require("../config/nodemailer");
 
 
 
