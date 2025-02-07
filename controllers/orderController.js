@@ -357,28 +357,49 @@ try{
 }
 }
 
-exports.latestOrders = async (req, res, next) => {
+exports.Orders = async (req, res, next) => {
+  console.log("orders api hitted.");
+  
   try {
-    const latestOrders = await models.Order_Product.findAll({
-      order: [['createdAt', 'DESC']],
-      limit: 10, 
-      raw: true
-    });
+    const type = req.params.type;
+    let Orders;
 
-    if (!latestOrders || latestOrders.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No orders found.",
+    if(type=="latest"){
+      Orders = await models.Order_Product.findAll({
+        where:{
+          payment_status: 'success'
+        },
+        order: [['createdAt', 'DESC']],
+        raw: true
       });
+  
+      if (!Orders || Orders.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "No orders found.",
+        });
+      }
+    } else if(type=="all"){
+      const Orders = await models.Order_Product.findAll({
+        where:{
+          payment_status: 'success'
+        }
+      });
+  
+      if (!Orders || Orders.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "No orders found.",
+        });
+      }
     }
-
     return res.status(200).json({
       success: true,
-      message: "Latest orders fetched successfully.",
-      result: latestOrders,
+      message: "Orders fetched successfully.",
+      result: Orders,
     });
   } catch (error) {
-    console.error("Error fetching latest orders:", error.message);
+    console.error("Error fetching orders:", error.message);
     return res.status(500).json({
       success: false,
       message: "An error occurred while fetching the latest orders.",
