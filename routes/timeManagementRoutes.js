@@ -7,5 +7,6 @@ const router = express.Router();
 
 router.post("/time-management", checkAdminMiddleware.checkAdmin, timeManagementController.timeManagement);
 
+router.get("/get-pickup-time", checkAdminMiddleware.checkAdmin, timeManagementController.GetPickupTime);
 
 module.exports = router;
