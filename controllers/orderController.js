@@ -109,56 +109,68 @@ function generateToken() {
 };
 
 function invoice(billingData) {
-  return `
-      <table class="table_custome">
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Confirmation</title>
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: auto; border-collapse: collapse;">
+    <!-- Header -->
+
+
+    <!-- Purchase Details -->
     <tr>
-      <th style="border-bottom: 1px solid #000;   padding: 20px 20px;   display: block; width: 100%;">
-       <a href=""><img src="https://infoonmydate.com/assets/logo.jpg" alt="365logo" style="display: block; margin-right: auto; width: 24%;"></a>
-      </th>
-      <th style="text-align: left; border-bottom: 1px solid #000;   padding: 20px 20px;     display: block;    width: 100%;">
-        <h4 style="color: #000; font-style: 24px;     line-height: normal;">365 INSTANT CHECK - BILLING RECEIPT</h4>
-        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Date of Purchase: ${billingData.dateOfPurchase}</p>
-        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Customer Name: ${billingData.customerName}</p>
-        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 0px;">Customer Email: ${billingData.email}</p>
-      </th>
-      <th style="text-align: left; border-bottom: 1px solid #000;   padding: 20px 20px;     display: block;    width: 100%;">
-        <h4 style=" color: #000; font-style: 24px;     line-height: normal;">365 Instant Check: </h4>
-        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Unit Price: $${billingData.unitPrice} </p>
-        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 0px;">Total: $${billingData.total} </p>
-      </th>
-      <th style="text-align: left; border-bottom: 1px solid #000;   padding: 20px 20px;     display: block;    width: 100%;">
-        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Payment Details </p>
-        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Payment Method: ${billingData.paymentMethod} </p>
-        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Credit Card Number: ${billingData.cardNumber.replace(/.(?=.{4})/g, 'x')}</p>
-        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 0px;">Total Amount: $${billingData.total}</p>
-      </th>
-      <th style="text-align: left;  border-bottom: 1px solid #000;   padding: 20px 20px;     display: block;    width: 100%;">
-        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">This transaction has been
-          approved. </p>
-        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Auth Code: ${billingData.authCode} </p>
-        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Credit Card Number: ${billingData.cardNumber.replace(/.(?=.{4})/g, 'x')}</p>
-        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 0px;">Transaction ID: ${billingData.transactionId}
-        </p>
-      </th>
-      <th style="text-align: left; border-bottom: 1px solid #000;   padding: 20px 20px;     display: block;    width: 100%;">
-        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Thank you for your
-          purchase!</p>
-        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 0px;">You have successfully
-          purchased the 365 Instant Check Report listed above. If you have any questions or need further assistance,
-          feel free to contact us.
-        </p>
-      </th>
-      <th style="text-align: left;  border-bottom: 1px solid #000;   padding: 20px 20px;     display: block;    width: 100%;">
-        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">365 Instant Check </p>
-        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 10px;">Customer Support: Support
-          Email: </p>
-        <p style="color: #000;  font-size: 16px;    line-height: 26px; margin-bottom: 0px;">365InstantCheck.com
-        </p>
-      </th>
+      <td style="padding: 20px; text-align: left;">
+        <h3 style="color: #000;">Order Confirmation</h3>
+        <p style="margin: 5px 0;"><strong>Date of Purchase:</strong> ${billingData.dateOfPurchase}</p>
+        <p style="margin: 5px 0;"><strong>Customer Name:</strong> ${billingData.customerName}</p>
+        <p style="margin: 5px 0;"><strong>Email:</strong> ${billingData.email}</p>
+      </td>
     </tr>
+
+    <!-- Order Summary -->
+    <tr>
+      <td style="padding: 20px; text-align: left; background-color: #f4f4f4;">
+        <h3 style="color: #000;">Order Summary</h3>
+        <p style="margin: 5px 0;"><strong>Unit Price:</strong> $${billingData.unitPrice}</p>
+        <p style="margin: 5px 0;"><strong>Total:</strong> $${billingData.total}</p>
+      </td>
+    </tr>
+
+    <!-- Payment Details -->
+    <tr>
+      <td style="padding: 20px; text-align: left;">
+        <h3 style="color: #000;">Payment Details</h3>
+        <p style="margin: 5px 0;"><strong>Payment Method:</strong> ${billingData.paymentMethod}</p>
+        <p style="margin: 5px 0;"><strong>Credit Card Number:</strong> ${billingData.cardNumber.replace(/.(?=.{4})/g, 'x')}</p>
+        <p style="margin: 5px 0;"><strong>Total Amount:</strong> $${billingData.total}</p>
+      </td>
+    </tr>
+
+    <!-- Transaction Approval -->
+    <tr>
+      <td style="padding: 20px; text-align: left; background-color: #f4f4f4;">
+        <h3 style="color: #000;">Transaction Approved</h3>
+        <p style="margin: 5px 0;"><strong>Auth Code:</strong> ${billingData.authCode}</p>
+        <p style="margin: 5px 0;"><strong>Transaction ID:</strong> ${billingData.transactionId}</p>
+      </td>
+    </tr>
+
+    <!-- Thank You Message -->
+    <tr>
+      <td style="padding: 20px; text-align: left;">
+        <h3 style="color: #000;">Thank You for Your Purchase!</h3>
+        <p>You have successfully purchased the 365 Instant Check Report. If you have any questions or need further assistance, feel free to contact us.</p>
+      </td>
+    </tr>
+
   </table>
-  
-      `
+</body>
+</html>
+`
 };
 
 const sendEmail = async (to, subject, html) => {
@@ -196,6 +208,7 @@ exports.createdOrder = async (req, res, next) => {
       phone: phone,
       total_amount: amount,
       payment_status: 'pending',
+      delivery_status: 'pending',
       order_details: orderDetails,
       userId: user_id,
       order_pickup_time: order_pickup_time
@@ -221,7 +234,7 @@ exports.handlePayment = async (req, res, next) => {
 
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Access-Control-Allow-Headers", "x-payment-api-key");
-  const { order_id, amount, productOriginalPrice, product_id, couponCode, firstName, lastName, email, customerProfileId, customerPaymentProfileId, paymentNonce } = req.body;
+  const { order_id, amount, productOriginalPrice, firstName, lastName, email, customerProfileId, customerPaymentProfileId, paymentNonce } = req.body;
   const { user_id } = req.body;
   let { useSavedCard } = req.body;
 
@@ -288,8 +301,11 @@ exports.handlePayment = async (req, res, next) => {
         userId: user_id,
       });
 
-      var payment_updation = await models.Order_Product.update(
-        { payment_status: 'success' },
+      var order_product_status={
+        delivery_status: 'pending',
+        payment_status: 'success'
+      }
+      var payment_updation = await models.Order_Product.update(order_product_status,
         { where: { order_id: order_id } }
       );
 

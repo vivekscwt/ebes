@@ -26,7 +26,8 @@ module.exports = (sequelize, DataTypes) => {
     payment_status: DataTypes.STRING,
     order_details: DataTypes.STRING,
     userId: DataTypes.INTEGER,
-    order_pickup_time: DataTypes.STRING
+    order_pickup_time: DataTypes.STRING,
+    delivery_status: { type: DataTypes.STRING, allowNull: true }
   }, {
     sequelize,
     modelName: 'Order_Product',
