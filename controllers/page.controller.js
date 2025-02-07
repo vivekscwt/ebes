@@ -45,20 +45,35 @@ async function saveBanner(req, res) {
             }
         }
 
-        if (failedItems.length > 0) {
+        if (successCount > 0 && failedItems.length > 0) {
+            return res.status(207).json({
+                success: true,
+                message: "Partial insertion completed.",
+                result:{
+                    successCount: successCount,
+                    failedCount: failedItems.length,
+                    failedItems: failedItems
+                }
+            });
+        }
+        if (successCount == 0 && failedItems.length > 0) {
             return res.status(207).json({
                 success: false,
-                message: "Partial insertion completed.",
-                successCount: successCount,
-                failedCount: failedItems.length,
-                failedItems: failedItems
+                message: "Insertion failed.",
+                result:{
+                    successCount: successCount,
+                    failedCount: failedItems.length,
+                    failedItems: failedItems
+                }
             });
         }
 
         res.status(201).json({
             success: true,
             message: "All banners inserted successfully",
-            insertedCount: successCount
+            result:{
+                successCount: successCount
+            }
         });
     } catch (error) {
         res.status(500).json({
@@ -108,6 +123,7 @@ async function getHomeData(req, res) {
 
         // Retrieve the latest 6 products ordered by 'createdAt' in descending order
         const latestProducts = await models.Product.findAll({
+            where: { status: 1 },
             order: [['createdAt', 'DESC']],
             limit: 6
         });
