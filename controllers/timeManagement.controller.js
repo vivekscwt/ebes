@@ -58,10 +58,41 @@ async function timeManagement(req, res){
     }
 }
 
+async function GetPickupTime(req, res){
+    try{
+
+        let existingdata = await models.Time_management.findAll();
+
+        if(existingdata.length>0){
+            return res.status(200).json({
+                success: true,
+                message: "Time fetched successfully.",
+                result: existingdata
+            });
+
+        }else{
+            return res.status(200).json({
+                success: true,
+                message: "Time fetched successfully.",
+                result: existingdata
+            });
+        }
+
+    } catch(error){
+        console.log("errors",error);
+        return res.status(200).json({
+            success: false,
+            message: "Something went wrong",
+            error: error
+        });
+    }
+}
+
 
 
 
 
 module.exports = {
-    timeManagement: timeManagement
+    timeManagement: timeManagement,
+    GetPickupTime:GetPickupTime
 }

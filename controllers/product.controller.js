@@ -168,7 +168,8 @@ function index(req, res) {
                 attributes: ['id', 'categoryName', 'categoryImage'], 
                 through: { attributes: [] } 
             }
-        ]
+        ],
+        order: [['createdAt', 'DESC']] // Orders by latest created product first
     })
     .then(result => {
         res.status(200).json({
@@ -195,6 +196,8 @@ function update(req, res) {
         content: req.body.content,
         priceRegular: req.body.priceRegular,
         priceOffer: req.body.priceOffer,
+        isPublic: req.body.isPublic,
+        productImage: req.body.productImage,
     }
 
     const userId = req.userData.userId;
