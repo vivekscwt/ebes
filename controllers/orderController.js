@@ -313,7 +313,16 @@ exports.handlePayment = async (req, res, next) => {
       sendEmail(customerData.email, "Invoice", invoice_template);
 
       // Send back the transactionId and token to the client
-      return sendSuccess(res, { transactionId, token }, "Payment successful");
+      // return sendSuccess(res, { transactionId, token }, "Payment successful");
+      return res.json({
+        success: true,
+        message: "Payment successful",
+        result: {
+          transactionId: transactionId,
+          token: token
+        }
+      });
+      
     } else {
       console.log("Payment failed:", transactionResponse);
       return next(new AppError("Payment failed : " + transactionResponse.getErrors().getError()[0].getErrorText(), 400));

@@ -24,9 +24,9 @@ router.get("/myPastOrders/:id", orderController.getPastOrdersByCustomerID);
 //latest orders
 // router.get("/latest-orders", orderController.get)
 
-router.post("/handle-payment",checkAuthMiddleware.checkAuth,orderController.handlePayment);
+router.post("/handle-payment",orderController.handlePayment);
 
-router.post("/create-order",checkAuthMiddleware.checkAuth,orderController.createdOrder);
+router.post("/create-order",orderController.createdOrder);
 
 router.get("/orders-data/:type",checkAdminMiddleware.checkAdmin, orderController.Orders);
 
