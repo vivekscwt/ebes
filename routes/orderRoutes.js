@@ -28,8 +28,10 @@ router.post("/handle-payment",checkAuthMiddleware.checkAuth,orderController.hand
 
 router.post("/create-order",checkAuthMiddleware.checkAuth,orderController.createdOrder);
 
-router.get("/orders-data",checkAdminMiddleware.checkAdmin, orderController.latestOrders)
+router.get("/orders-data/:type",checkAdminMiddleware.checkAdmin, orderController.Orders);
 
-router.get("/order-details/:order_id",checkAdminMiddleware.checkAdmin, orderController.orderDetails)
+router.get("/order-details/:order_id",checkAdminMiddleware.checkAdmin, orderController.orderDetails);
+
+router.get("/my-orders/:user_id",checkAuthMiddleware.checkAuth, orderController.myOrders);
 
 module.exports = router;

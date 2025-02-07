@@ -163,7 +163,7 @@ function invoice(billingData) {
     <tr>
       <td style="padding: 20px; text-align: left;">
         <h3 style="color: #000;">Thank You for Your Purchase!</h3>
-        <p>You have successfully purchased the 365 Instant Check Report. If you have any questions or need further assistance, feel free to contact us.</p>
+        <p>You have successfully purchased product. If you have any questions or need further assistance, feel free to contact us.</p>
       </td>
     </tr>
 
