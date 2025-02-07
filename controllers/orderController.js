@@ -324,63 +324,112 @@ exports.handlePayment = async (req, res, next) => {
   }
 };
 
+
 exports.orderDetails = async (req, res, next) => {
-try{
-  var order_id = req.params.order_id;
-  // var getorders = await models.Order_Product.findOne({
-  //   where: {
-  //     order_id: order_id
-  //   },
-  //   // include: [{
-  //   //   model: models.Order_History,
-  //   //   as: 'orderHistories',
-  //   //   where: {
-  //   //     order_id: order_id
-  //   //   },
-  //   //   attributes: ['transactionId'] 
-  //   // }],
-  //   // raw: true
-  // })
-  const getorders = await sequelize.query(
-    `SELECT Order_Product.*, Order_History.transactionId
-     FROM order_products AS Order_Product
-     LEFT JOIN order_histories AS Order_History
-     ON Order_Product.order_id = Order_History.order_id
-     WHERE Order_Product.order_id = :order_id`,
-    {
-      replacements: { order_id: order_id },
-      type: QueryTypes.SELECT, 
-      raw: true 
+  try{
+    var order_id = req.params.order_id;
+    // var getorders = await models.Order_Product.findOne({
+    //   where: {
+    //     order_id: order_id
+    //   },
+    //   // include: [{
+    //   //   model: models.Order_History,
+    //   //   as: 'orderHistories',
+    //   //   where: {
+    //   //     order_id: order_id
+    //   //   },
+    //   //   attributes: ['transactionId'] 
+    //   // }],
+    //   // raw: true
+    // })
+    const getorders = await sequelize.query(
+      `SELECT Order_Product.*, Order_History.transactionId
+       FROM order_products AS Order_Product
+       LEFT JOIN order_histories AS Order_History
+       ON Order_Product.order_id = Order_History.order_id
+       WHERE Order_Product.order_id = :order_id`,
+      {
+        replacements: { order_id: order_id },
+        type: QueryTypes.SELECT, 
+        raw: true 
+      }
+    );
+    
+    if (!getorders || getorders.length === 0) {
+      return next(new NotFoundError("Order not found"));
     }
-  );
-  
-  if (!getorders || getorders.length === 0) {
-    return next(new NotFoundError("Order not found"));
+    
+    return res.status(200).json({
+      success: true,
+      message: "order fetched successfully.",
+      result: getorders
+    });
+  }catch(error){
+    console.log("errors",error);
+    return res.status(200).json({
+        success: false,
+        message: "Something went wrong",
+        error: error
+    });
+  }
   }
   
-  return res.status(200).json({
-    success: true,
-    message: "order fetched successfully.",
-    result: getorders
-  });
-}catch(error){
-  console.log("errors",error);
-  return res.status(200).json({
-      success: false,
-      message: "Something went wrong",
-      error: error
-  });
-}
-}
-exports.Orders = async (req, res, next) => {
-  try {
-    const type = req.params.type;
-    let Orders;
-
-    if(type=="latest"){
-      Orders = await models.Order_Product.findAll({
+  exports.Orders = async (req, res, next) => {
+    try {
+      const type = req.params.type;
+      let Orders;
+  
+      if(type=="latest"){
+        Orders = await models.Order_Product.findAll({
+          where:{
+            payment_status: 'success'
+          },
+          order: [['createdAt', 'DESC']],
+          raw: true
+        });
+    
+        if (!Orders || Orders.length === 0) {
+          return res.status(404).json({
+            success: false,
+            message: "No orders found.",
+          });
+        }
+      } else if(type=="all"){
+        const Orders = await models.Order_Product.findAll({
+          where:{
+            payment_status: 'success'
+          }
+        });
+    
+        if (!Orders || Orders.length === 0) {
+          return res.status(404).json({
+            success: false,
+            message: "No orders found.",
+          });
+        }
+      }
+      return res.status(200).json({
+        success: true,
+        message: "Orders fetched successfully.",
+        result: Orders,
+      });
+    } catch (error) {
+      console.error("Error fetching orders:", error.message);
+      return res.status(500).json({
+        success: false,
+        message: "An error occurred while fetching the latest orders.",
+        error: error.message,
+      });
+    }
+  };
+  
+  exports.myOrders = async (req, res, next) => {
+    try {
+      const user_id = req.params.user_id;
+      let Orders = await models.Order_Product.findAll({
         where:{
-          payment_status: 'success'
+          payment_status: 'success',
+          userId: user_id
         },
         order: [['createdAt', 'DESC']],
         raw: true
@@ -390,64 +439,22 @@ exports.Orders = async (req, res, next) => {
         return res.status(404).json({
           success: false,
           message: "No orders found.",
+          result: Orders,
         });
       }
-    } else if(type=="all"){
-      const Orders = await models.Order_Product.findAll({
-        where:{
-          payment_status: 'success'
-        }
+      return res.status(200).json({
+        success: true,
+        message: "Orders fetched successfully.",
+        result: Orders,
       });
-  
-      if (!Orders || Orders.length === 0) {
-        return res.status(404).json({
+    } catch (error) {
+        console.error("Error fetching orders:", error.message);
+        return res.status(500).json({
           success: false,
-          message: "No orders found.",
+          message: "An error occurred while fetching the latest orders.",
+          error: error.message,
         });
-      }
     }
-    return res.status(200).json({
-      success: true,
-      message: "Orders fetched successfully.",
-      result: Orders,
-    });
-  } catch (error) {
-    console.error("Error fetching orders:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "An error occurred while fetching the latest orders.",
-      error: error.message,
-    });
-  }
-};
-exports.latestOrders = async (req, res, next) => {
-  try {
-    const latestOrders = await models.Order_Product.findAll({
-      order: [['createdAt', 'DESC']],
-      limit: 10, 
-      raw: true
-    });
-
-    if (!latestOrders || latestOrders.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No orders found.",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "Latest orders fetched successfully.",
-      result: latestOrders,
-    });
-  } catch (error) {
-    console.error("Error fetching latest orders:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "An error occurred while fetching the latest orders.",
-      error: error.message,
-    });
-  }
-};
-
+  };
+  
 
