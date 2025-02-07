@@ -290,6 +290,7 @@ exports.handlePayment = async (req, res, next) => {
 
       var payment_updation = await models.Order_Product.update(
         { payment_status: 'success' },
+        {delivery_status: 'pending'},
         { where: { order_id: order_id } }
       );
 
@@ -358,8 +359,6 @@ try{
 }
 
 exports.Orders = async (req, res, next) => {
-  console.log("orders api hitted.");
-  
   try {
     const type = req.params.type;
     let Orders;
@@ -408,4 +407,37 @@ exports.Orders = async (req, res, next) => {
   }
 };
 
+exports.myOrders = async (req, res, next) => {
+  try {
+    const user_id = req.params.user_id;
+    let Orders = await models.Order_Product.findAll({
+      where:{
+        payment_status: 'success',
+        userId: user_id
+      },
+      order: [['createdAt', 'DESC']],
+      raw: true
+    });
+
+    if (!Orders || Orders.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No orders found.",
+        result: Orders,
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Orders fetched successfully.",
+      result: Orders,
+    });
+  } catch (error) {
+      console.error("Error fetching orders:", error.message);
+      return res.status(500).json({
+        success: false,
+        message: "An error occurred while fetching the latest orders.",
+        error: error.message,
+      });
+  }
+};
 

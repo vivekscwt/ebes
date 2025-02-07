@@ -32,4 +32,6 @@ router.get("/orders-data/:type",checkAdminMiddleware.checkAdmin, orderController
 
 router.get("/order-details/:order_id",checkAdminMiddleware.checkAdmin, orderController.orderDetails);
 
+router.get("/my-orders/:user_id",checkAuthMiddleware.checkAuth, orderController.myOrders);
+
 module.exports = router;
