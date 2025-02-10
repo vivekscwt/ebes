@@ -187,7 +187,11 @@ function index(req, res) {
     });
 }
 
-
+/**
+ * Function to update a product
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 function update(req, res) {
     const id = req.params.id;
     const updatedProduct = {

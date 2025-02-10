@@ -10,6 +10,7 @@ const router = express.Router();
 router.post("/category", checkAdminMiddleware.checkAdmin, categoryController.saveCategory);
 router.patch("/category/updatecategory", checkAdminMiddleware.checkAdmin, categoryController.updateCategory);
 router.get("/", checkAdminMiddleware.checkAdmin, categoryController.categoryListing);
+router.get("/categoryId/:id", categoryController.categoryProductListing);
 router.delete("/:id", checkAdminMiddleware.checkAdmin, categoryController.destroy);
 
 module.exports = router;

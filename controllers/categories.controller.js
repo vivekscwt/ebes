@@ -161,6 +161,42 @@ const categoryListing = async (req, res) => {
     }
 };
 
+
+/**
+ * Fetches products of a category by category id.
+ */
+const categoryProductListing = async (req, res) => {
+    const categoryId = req.params.id;
+    try {
+        // Fetch category by id with included products
+        const categories = await models.ProductCategory.findAll({
+            where: { id: categoryId },
+            include: [
+                {
+                    model: models.Product,
+                    where: {
+                        isPublic: true,
+                        status: 1
+                    },
+                    through: { attributes: [] }
+                }
+            ]
+        });
+        return res.status(200).json({
+            success: true,
+            message: "Category fetched successfully.",
+            result: categories
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong!",
+            error: error.message // Show detailed error message
+        });
+    }
+};
+
 async function destroy(req, res) {
   try{
     const id = req.params.id;
@@ -191,5 +227,6 @@ module.exports = {
     saveCategory: saveCategory,
     updateCategory: updateCategory,
     categoryListing: categoryListing,
+    categoryProductListing: categoryProductListing,
     destroy: destroy
 }
