@@ -9,14 +9,11 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      product_id: {
+      user_id: {
         type: Sequelize.INTEGER
       },
-      product_price: {
-        type: Sequelize.STRING
-      },
-      user_id: {
-        type: Sequelize.STRING
+      cart_products: {
+        type: Sequelize.TEXT
       },
       createdAt: {
         allowNull: false,

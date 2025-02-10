@@ -145,6 +145,17 @@ const login = async (req, res) => {
       { expiresIn: "30d" } // Token expiration time
     );
 
+    // Fetch user cart data if it exists
+    let userCart = null;
+    const cartData = await models.User_cart.findOne({
+      where: { user_id: user.id },
+    });
+
+    if (cartData) {
+      // Parse the cart_products JSON string if it exists
+      userCart = JSON.parse(cartData.cart_products);
+    }
+
     // Return successful response with the token
     return res.status(200).json({
       success: true,
@@ -157,6 +168,7 @@ const login = async (req, res) => {
         email: user.email,
         phone: user.phone,
         isCustomer: user.isCustomer,
+        Cart_data: userCart,
       }
     });
   } catch (error) {

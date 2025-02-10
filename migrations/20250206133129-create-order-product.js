@@ -28,7 +28,7 @@ module.exports = {
         type: Sequelize.STRING
       },
       order_details: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT
       },
       userId: {
         type: Sequelize.INTEGER

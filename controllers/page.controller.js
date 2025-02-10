@@ -123,7 +123,7 @@ async function getHomeData(req, res) {
 
         // Retrieve the latest 6 products ordered by 'createdAt' in descending order
         const latestProducts = await models.Product.findAll({
-            where: { status: 1 },
+            where: { status: 1, isPublic: true },
             order: [['createdAt', 'DESC']],
             limit: 6
         });

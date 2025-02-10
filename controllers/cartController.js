@@ -86,45 +86,71 @@ exports.buy = (req, res) => {
 };
 
 exports.verifyCart = async (req, res) => {
-    try{
-        var {user_id, product_id, product_price} = req.body;
+    const { Logedin_user_ID, Cart_data } = req.body;
 
-        var cartQuery = await models.User_cart.findAll({
-            where:{
-                user_id: user_id
+    try {
+
+        // Check if Cart_data exists and contains products
+        if (!Array.isArray(Cart_data) || Cart_data.length === 0) {
+            // Delete user cart data if Cart_data is empty
+            if (Logedin_user_ID) {
+                await models.User_cart.destroy({ where: { user_id: Logedin_user_ID } });
             }
-        })
-        console.log("cartQuery.length", cartQuery.length);
-        
-        const updatedCart = {
-            product_id: product_id,
-            product_price: product_price
-        }
-        if(cartQuery.length>0){
-            var product = await models.User_cart.update(updatedCart,{
-                where:{
-                    user_id: user_id
+
+            return res.status(200).json({
+                success: true,
+                message: "Cart is empty.",
+                result:{
+                    'Logedin_user_ID' : Logedin_user_ID,
+                    'Cart_data' :[]
                 }
-            })
-            return res.status(200).json({
-                success: true,
-                message: `user cart added successfully.`,
-                result: updatedCart
-            })
-        } else {
-            var product = await models.User_cart.create({
-                user_id: user_id,
-                product_id: product_id,
-                product_price: product_price
-            })
-            return res.status(200).json({
-                success: true,
-                message: `user cart added successfully.`,
-                result: product
-            })
+            });
         }
-    } catch(error){
-        console.error("Error deleting images:", error);
+
+        let updatedCartData = [];
+        for (const item of Cart_data) {
+            const product = await models.Product.findOne({
+                where: { id: item.id }
+            });
+
+            // If product does not exist, skip it
+            if (!product) continue;
+
+            let updatedItem = { ...item };
+
+            // Check and update priceRegular & priceOffer if incorrect
+            if (product.priceRegular !== item.priceRegular || product.priceOffer !== item.priceOffer) {
+                updatedItem.priceRegular = product.priceRegular;
+                updatedItem.priceOffer = product.priceOffer;
+            }
+
+            updatedCartData.push({ ...updatedItem, user_id: Logedin_user_ID });
+        }
+
+        // Delete existing cart for user if Logedin_user_ID is not null
+        if (Logedin_user_ID) {
+            await models.User_cart.destroy({ where: { user_id: Logedin_user_ID } });
+
+            // Save updated cart data as a single row with cart_products stored as JSON
+            if (updatedCartData.length > 0) {
+                await models.User_cart.create({
+                    user_id: Logedin_user_ID,
+                    cart_products: JSON.stringify(updatedCartData) // Store as JSON string
+                });
+            }
+        }
+        
+
+        return res.status(200).json({
+            success: true,
+            message: "Cart saved successfully.",
+            result:{
+                'Logedin_user_ID' : Logedin_user_ID,
+                'Cart_data' : updatedCartData
+            }
+        });
+
+    }catch (error) {
         return res.status(500).json({
             success: false,
             message: "Something went wrong!",
@@ -132,3 +158,4 @@ exports.verifyCart = async (req, res) => {
         });
     }
 }
+
