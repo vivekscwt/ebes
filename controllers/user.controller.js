@@ -339,12 +339,15 @@ const allCount = async (req, res) => {
     })
     const totalProducts = await models.Product.count({
       where:{
-        status: 1
+        status: 1,
+        isPublic: true
       }
     });
-    const totalOrders = await models.Order_Product.count({
+    const totalOrders = await models.Order_Product.count();
+
+    const totalSales = await models.Order_Product.sum('total_amount', {
       where: {
-        payment_status: "success"
+        payment_status: 'success'
       }
     });
 
@@ -356,7 +359,7 @@ const allCount = async (req, res) => {
         guestuserscount: guestuserscount,
         totalProducts: totalProducts,
         totalOrders: totalOrders,
-        totalSales: 0
+        totalSales: totalSales
       },
       message: "No of users fetched successfully.",
     });
