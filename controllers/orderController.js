@@ -1,5 +1,5 @@
 // orderController.js
-
+const { UnhandledError, NotFoundError, AppError } = require('../errors'); // Adjust the path as needed
 const orderModel = require("../models/orders");
 const crypto = require('crypto');
 const { createTransactionv2 } = require("../authorize.net");
@@ -196,14 +196,31 @@ exports.createdOrder = async (req, res, next) => {
       return next(new BadRequestError("Invalid product_details. It should be a non-empty array."));
     }
 
-    let orderDetails;
-    orderDetails = JSON.stringify(product_details);
+    // Fetch the latest order ID from the database
+    const latestOrder = await models.Order_Product.findOne({
+      order: [['createdAt', 'DESC']], // Get the most recent order
+      attributes: ['order_id'], // Only fetch the order_id column
+      raw: true,
+    });
+
+    let newOrderId;
+    if (latestOrder && latestOrder.order_id) {
+      // Extract the numeric part of the order ID and increment it
+      const numericPart = parseInt(latestOrder.order_id, 10);
+      newOrderId = (numericPart + 1).toString().padStart(4, '0'); // Pad with leading zeros
+    } else {
+      // If no orders exist, start from 0001
+      newOrderId = '0001';
+    }
+
+    // Prepare order details
+    const orderDetails = JSON.stringify(product_details);
     console.log("Parsed Order Details:", orderDetails);
 
     const customerData = { firstName, lastName, email, phone };
 
-    var orderData = {
-      order_id: uuidv4(),
+    const orderData = {
+      order_id: newOrderId, // Use the generated order ID
       customerName: customerData?.firstName + " " + customerData?.lastName,
       email: email,
       phone: phone,
@@ -212,17 +229,16 @@ exports.createdOrder = async (req, res, next) => {
       delivery_status: 'pending',
       order_details: orderDetails,
       userId: user_id,
-      order_pickup_time: order_pickup_time
+      order_pickup_time: order_pickup_time,
     };
 
-    await models.Order_Product.create({
-      ...orderData
-    });
+    // Create the order in the database
+    await models.Order_Product.create(orderData);
 
     return res.status(200).json({
       success: true,
-      message: "order created successfully.",
-      result: orderData
+      message: "Order created successfully.",
+      result: orderData,
     });
 
   } catch (error) {
@@ -254,29 +270,43 @@ exports.handlePayment = async (req, res, next) => {
       email: product_order.email
     };
 
+    // Generate a token
     const token = generateToken();
     console.log("createdtoken", token);
 
-    const transactionResponse = await createTransactionv2(amount, useSavedCard, paymentNonce, customerProfileId, customerPaymentProfileId, customerData, "Basic", token);
-    if (transactionResponse.getResponseCode() === "1") {
-      if (!token) {
-        return next(new UnhandledError("Token generation failed"));
-      }
+    if (!token) {
+      return next(new UnhandledError("Token generation failed"));
+    }
 
+    // Process the payment
+    const transactionResponse = await createTransactionv2(
+      amount,
+      useSavedCard,
+      paymentNonce,
+      customerProfileId,
+      customerPaymentProfileId,
+      customerData,
+      "Basic",
+      token
+    );
+
+    if (transactionResponse.getResponseCode() === "1") {
+      
       const transactionId = transactionResponse.getTransId();
+
+      // Insert the token into the database
       const insertedToken = await models.token.create({
         token,
         paymentStatus: "success",
         transactionId: transactionId,
       });
-      console.log("insertedToken", insertedToken);
-
-
+      //console.log("insertedToken", insertedToken);
       if (!insertedToken) {
         return next(new UnhandledError("Token insertion failed"));
       }
 
-      // Oder billing data
+
+      // Prepare billing data
       var billingData = {
         dateOfPurchase: new Date().toISOString().split('T')[0],
         customerName: customerData.Name,
@@ -288,7 +318,8 @@ exports.handlePayment = async (req, res, next) => {
         authCode: transactionResponse.getAuthCode(),
         transactionId: transactionId,
       };
-      // Insert billing data
+
+      // Insert billing data into the database
       await models.Order_History.create({
         order_id: order_id,
         transactionId: transactionId,
@@ -305,8 +336,9 @@ exports.handlePayment = async (req, res, next) => {
       var order_product_status={
         delivery_status: 'pending',
         payment_status: 'success'
-      }
-      var payment_updation = await models.Order_Product.update(order_product_status,
+      };
+
+      await models.Order_Product.update(order_product_status,
         { where: { order_id: order_id } }
       );
 
@@ -325,12 +357,47 @@ exports.handlePayment = async (req, res, next) => {
       });
       
     } else {
-      console.log("Payment failed:", transactionResponse);
-      return next(new AppError("Payment failed : " + transactionResponse.getErrors().getError()[0].getErrorText(), 400));
-    }
+        console.log("Payment failed:", transactionResponse);
+    
+        // Extract error message properly
+        let errorMessage = "Payment failed.";
+        if (transactionResponse.getErrors() && transactionResponse.getErrors().getError()) {
+            const errorArray = transactionResponse.getErrors().getError();
+            if (errorArray.length > 0) {
+                errorMessage = errorArray[0].getErrorText();
+            }
+        }
+    
+        // **Update Order_Product payment_status to 'failed'**
+        await models.Order_Product.update(
+            { payment_status: 'failed' },
+            { where: { order_id: order_id } }
+        );
+    
+        return res.status(400).json({
+            success: false,
+            message: "Payment failed",
+            error: errorMessage
+        });
+    }  
   } catch (error) {
     console.error("Payment processing error:", error);
-    next(new UnhandledError("Payment processing error"));
+
+    // Ensure payment_status is updated to 'failed' even in case of errors
+    try {
+        await models.Order_Product.update(
+            { payment_status: 'failed' },
+            { where: { order_id: order_id } }
+        );
+        return res.status(500).json({
+          success: false,
+          message: "Payment processing error",
+          error: error.message || "An unexpected error occurred"
+        });
+    } catch (dbError) {
+        console.error("Failed to update payment_status to 'failed':", dbError);
+    }
+
   }
 };
 
@@ -338,22 +405,9 @@ exports.handlePayment = async (req, res, next) => {
 exports.orderDetails = async (req, res, next) => {
   try{
     var order_id = req.params.order_id;
-    // var getorders = await models.Order_Product.findOne({
-    //   where: {
-    //     order_id: order_id
-    //   },
-    //   // include: [{
-    //   //   model: models.Order_History,
-    //   //   as: 'orderHistories',
-    //   //   where: {
-    //   //     order_id: order_id
-    //   //   },
-    //   //   attributes: ['transactionId'] 
-    //   // }],
-    //   // raw: true
-    // })
+
     const getorders = await sequelize.query(
-      `SELECT Order_Product.*, Order_History.transactionId
+      `SELECT Order_Product.*, Order_History.transactionId, Order_History.paymentMethod, Order_History.cardNumber, Order_History.cardNumber
        FROM order_products AS Order_Product
        LEFT JOIN order_histories AS Order_History
        ON Order_Product.order_id = Order_History.order_id
@@ -406,7 +460,7 @@ exports.Orders = async (req, res, next) => {
         });
         break;
 
-      case "pending":
+      case "payment_pending":
         orders = await models.Order_Product.findAll({
           where: { payment_status: 'pending' },
           order: [['createdAt', 'DESC']],
