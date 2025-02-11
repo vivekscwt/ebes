@@ -494,14 +494,15 @@ const adminEditProfile = async (req, res) => {
   try {
     const { first_name, last_name, new_password, confirm_password, email } = req.body;
 
+    // Check if new password and confirm password match
     if (new_password !== confirm_password) {
       return res.status(400).json({
         success: false,
         message: "New password and confirm password do not match.",
       });
     }
-    const hashedNewPassword = await bcryptjs.hash(new_password, 8);
 
+    // Find the admin by email
     const admin = await models.Admin.findOne({ where: { email } });
 
     if (!admin) {
@@ -511,10 +512,23 @@ const adminEditProfile = async (req, res) => {
       });
     }
 
-    var query = await models.Admin.update(
-      { fname: first_name, lname: last_name, password: hashedNewPassword },
-      { where: { email: email } }
-    );
+    // Prepare the update object
+    const updateData = {
+      fname: first_name,
+      lname: last_name,
+    };
+
+    // Update password only if new_password is provided
+    if (new_password && new_password.trim() !== "") {
+      const hashedNewPassword = await bcryptjs.hash(new_password, 8);
+      updateData.password = hashedNewPassword;
+    }
+
+    // Update the admin profile
+    await models.Admin.update(updateData, {
+      where: { email: email },
+    });
+
     return res.status(200).json({
       success: true,
       message: "Admin profile updated successfully.",
@@ -528,7 +542,7 @@ const adminEditProfile = async (req, res) => {
       error: error.message,
     });
   }
-}
+};
 
 const userListing = async (req, res) => {
   try {
