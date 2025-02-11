@@ -406,6 +406,14 @@ exports.Orders = async (req, res, next) => {
         });
         break;
 
+      case "pending":
+        orders = await models.Order_Product.findAll({
+          where: { payment_status: 'pending' },
+          order: [['createdAt', 'DESC']],
+          raw: true,
+        });
+        break;
+
       case "success":
         orders = await models.Order_Product.findAll({
           where: { payment_status: 'success' },
