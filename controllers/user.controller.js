@@ -358,8 +358,8 @@ const allCount = async (req, res) => {
         registereduserscount: registereduserscount,
         guestuserscount: guestuserscount,
         totalProducts: totalProducts,
-        totalOrders: totalOrders,
-        totalSales: totalSales
+        totalOrders: totalOrders?totalOrders:0,
+        totalSales: totalSales?totalOrders:0
       },
       message: "No of users fetched successfully.",
     });
