@@ -128,6 +128,71 @@ async function getHomeData(req, res) {
             limit: 6
         });
 
+        // Define productSalesArray at a higher scope to ensure availability
+        let productSalesArray = [];
+
+        // Best-selling Products
+        try {
+            // Fetch all orders from the order_products table
+            const orders = await models.Order_Product.findAll({
+                attributes: ['order_details'], // Fetch only the order_details column
+                raw: true,
+            });
+
+            // Initialize a Map to store product IDs and their total quantities
+            const productSales = new Map();
+
+            // Process each order
+            orders.forEach((order) => {
+                const orderDetails = JSON.parse(order.order_details); // Parse the JSON array
+
+                // Iterate through each product in the order
+                orderDetails.forEach((product) => {
+                    const productId = product.id;
+                    const quantity = product.quantity;
+
+                    // Update the total quantity for the product ID
+                    productSales.set(productId, (productSales.get(productId) || 0) + quantity);
+                });
+            });
+
+            // Convert the Map to an array of { productId, totalQuantity } objects
+            const productSalesArrayRaw = Array.from(productSales, ([productId, totalQuantity]) => ({
+                productId,
+                totalQuantity,
+            }));
+            
+
+            // Sort the array by totalQuantity in descending order
+            productSalesArrayRaw.sort((a, b) => b.totalQuantity - a.totalQuantity);
+
+            // Extract only product IDs
+            const bestSellingProductIds = productSalesArrayRaw.map(item => item.productId);
+
+            if (bestSellingProductIds.length > 0) {
+                // Fetch product details for best-selling products
+                const bestSellingProducts = await models.Product.findAll({
+                    where: { id: bestSellingProductIds },
+                    raw: true
+                });
+
+                // Merge product details with totalQuantity
+                productSalesArray = bestSellingProducts.map(product => {
+                    const totalQuantity = productSales.get(product.id) || 0;
+                    return { ...product, totalQuantity };
+                });
+
+                // Sort again just in case (to ensure proper order after merging)
+                productSalesArray.sort((a, b) => b.totalQuantity - a.totalQuantity);
+
+                // Keep only the top 4 best-selling products
+                productSalesArray = productSalesArray.slice(0, 4);
+            }
+
+        } catch (error) {
+            console.error("Error fetching best-selling products:", error.message);
+        }
+
         // Send success response with retrieved data
         res.status(200).json({
             success: true,
@@ -136,7 +201,7 @@ async function getHomeData(req, res) {
                 banners: banners,
                 categories: categories,
                 latestProducts: latestProducts,
-                Bestsellers: []
+                Bestsellers: productSalesArray
             }
         });
     } catch (error) {
