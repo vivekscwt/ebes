@@ -391,9 +391,10 @@ exports.orderDetails = async (req, res, next) => {
   
       if(type=="latest"){
         Orders = await models.Order_Product.findAll({
-          where:{
-            payment_status: 'success'
-          },
+          // where:{
+          //   payment_status: 'success'
+          // },,
+          limit: 10,
           order: [['createdAt', 'DESC']],
           raw: true
         });
@@ -406,8 +407,50 @@ exports.orderDetails = async (req, res, next) => {
         }
       } else if(type=="all"){
         const Orders = await models.Order_Product.findAll({
+          // where:{
+          //   payment_status: 'success'
+          // },
+          order: [['createdAt', 'DESC']],
+        });
+    
+        if (!Orders || Orders.length === 0) {
+          return res.status(404).json({
+            success: false,
+            message: "No orders found.",
+          });
+        }
+      } else if(type=="success"){
+        const Orders = await models.Order_Product.findAll({
           where:{
             payment_status: 'success'
+          },
+          order: [['createdAt', 'DESC']],
+        });
+    
+        if (!Orders || Orders.length === 0) {
+          return res.status(404).json({
+            success: false,
+            message: "No orders found.",
+          });
+        }
+      } else if(type=="failed"){
+        const Orders = await models.Order_Product.findAll({
+          where:{
+            payment_status: 'failed'
+          },
+          order: [['createdAt', 'DESC']],
+        });
+    
+        if (!Orders || Orders.length === 0) {
+          return res.status(404).json({
+            success: false,
+            message: "No orders found.",
+          });
+        }
+      } else{
+        const Orders = await models.Order_Product.findAll({
+          where:{
+            delivery_status: type
           }
         });
     
