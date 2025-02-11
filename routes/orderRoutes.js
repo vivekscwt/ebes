@@ -34,4 +34,6 @@ router.get("/order-details/:order_id",checkAdminMiddleware.checkAdmin, orderCont
 
 router.get("/my-orders/:user_id",checkAuthMiddleware.checkAuth, orderController.myOrders);
 
+router.patch("/:order_id", checkAdminMiddleware.checkAdmin, orderController.updateOrderStatus);
+
 module.exports = router;

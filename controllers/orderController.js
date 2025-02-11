@@ -495,9 +495,10 @@ exports.Orders = async (req, res, next) => {
 
     // Check if orders were found
     if (!orders || orders.length === 0) {
-      return res.status(404).json({
-        success: false,
+      return res.status(200).json({
+        success: true,
         message: "No orders found.",
+        result:[]
       });
     }
 
@@ -523,26 +524,36 @@ exports.Orders = async (req, res, next) => {
   exports.myOrders = async (req, res, next) => {
     try {
       const user_id = req.params.user_id;
-      let Orders = await models.Order_Product.findAll({
-        where:{
-          payment_status: 'success',
-          userId: user_id
-        },
-        order: [['createdAt', 'DESC']],
-        raw: true
-      });
+
+       // Fetch orders with related history data
+        const myOrders = await sequelize.query(
+            `SELECT 
+                Order_Product.*, 
+                Order_History.transactionId, 
+                Order_History.paymentMethod, 
+                Order_History.cardNumber
+             FROM order_products AS Order_Product
+             LEFT JOIN order_histories AS Order_History
+             ON Order_Product.order_id = Order_History.order_id
+             WHERE Order_Product.userId = :user_id`,
+            {
+                replacements: { user_id: user_id }, // Use user_id instead of order_id
+                type: sequelize.QueryTypes.SELECT,
+                raw: true,
+            }
+        );
   
-      if (!Orders || Orders.length === 0) {
-        return res.status(404).json({
+      if (!myOrders || myOrders.length === 0) {
+        return res.status(200).json({
           success: false,
           message: "No orders found.",
-          result: Orders,
+          result: [],
         });
       }
       return res.status(200).json({
         success: true,
         message: "Orders fetched successfully.",
-        result: Orders,
+        result: myOrders,
       });
     } catch (error) {
         console.error("Error fetching orders:", error.message);
@@ -555,3 +566,48 @@ exports.Orders = async (req, res, next) => {
   };
   
 
+/**
+ * Updates the delivery status of an order.
+ */
+exports.updateOrderStatus = async (req, res, next) => {
+    try {
+        const orderId = req.params.order_id;
+        const { delivery_status } = req.body;
+
+        // Validate the delivery_status
+        const allowedStatuses = ["pending", "processing", "ready", "completed"];
+        if (!allowedStatuses.includes(delivery_status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid delivery status. Allowed values are: pending, processing, ready, completed.",
+            });
+        }
+
+        // Update the delivery status in the database
+        const result = await models.Order_Product.update(
+            { delivery_status },
+            { where: { order_id: orderId } }
+        );
+
+        // Check if any rows were affected
+        if (result[0] === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found or delivery status unchanged.",
+            });
+        }
+
+        // Respond with success
+        return res.status(200).json({
+            success: true,
+            message: "Delivery status updated successfully.",
+        });
+    } catch (error) {
+        console.error("Error updating delivery status:", error.message);
+        return res.status(500).json({
+            success: false,
+            message: "An error occurred while updating delivery status.",
+            error: error.message,
+        });
+    }
+};
