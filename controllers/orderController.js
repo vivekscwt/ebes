@@ -383,99 +383,81 @@ exports.orderDetails = async (req, res, next) => {
     });
   }
   }
-  
-  exports.Orders = async (req, res, next) => {
-    try {
-      const type = req.params.type;
-      let Orders;
-  
-      if(type=="latest"){
-        Orders = await models.Order_Product.findAll({
-          // where:{
-          //   payment_status: 'success'
-          // },,
+
+exports.Orders = async (req, res, next) => {
+  try {
+    const type = req.params.type;
+    let orders;
+
+    // Fetch orders based on the type
+    switch (type) {
+      case "latest":
+        orders = await models.Order_Product.findAll({
           limit: 10,
           order: [['createdAt', 'DESC']],
-          raw: true
+          raw: true,
         });
-    
-        if (!Orders || Orders.length === 0) {
-          return res.status(404).json({
-            success: false,
-            message: "No orders found.",
-          });
-        }
-      } else if(type=="all"){
-        const Orders = await models.Order_Product.findAll({
-          // where:{
-          //   payment_status: 'success'
-          // },
+        break;
+
+      case "all":
+        orders = await models.Order_Product.findAll({
           order: [['createdAt', 'DESC']],
+          raw: true,
         });
-    
-        if (!Orders || Orders.length === 0) {
-          return res.status(404).json({
-            success: false,
-            message: "No orders found.",
-          });
-        }
-      } else if(type=="success"){
-        const Orders = await models.Order_Product.findAll({
-          where:{
-            payment_status: 'success'
-          },
+        break;
+
+      case "success":
+        orders = await models.Order_Product.findAll({
+          where: { payment_status: 'success' },
           order: [['createdAt', 'DESC']],
+          raw: true,
         });
-    
-        if (!Orders || Orders.length === 0) {
-          return res.status(404).json({
-            success: false,
-            message: "No orders found.",
-          });
-        }
-      } else if(type=="failed"){
-        const Orders = await models.Order_Product.findAll({
-          where:{
-            payment_status: 'failed'
-          },
+        break;
+
+      case "failed":
+        orders = await models.Order_Product.findAll({
+          where: { payment_status: 'failed' },
           order: [['createdAt', 'DESC']],
+          raw: true,
         });
-    
-        if (!Orders || Orders.length === 0) {
-          return res.status(404).json({
-            success: false,
-            message: "No orders found.",
-          });
-        }
-      } else{
-        const Orders = await models.Order_Product.findAll({
-          where:{
-            delivery_status: type
-          }
+        break;
+
+      default:
+        // Assume type is a delivery_status
+        orders = await models.Order_Product.findAll({
+          where: { delivery_status: type },
+          raw: true,
         });
-    
-        if (!Orders || Orders.length === 0) {
-          return res.status(404).json({
-            success: false,
-            message: "No orders found.",
-          });
-        }
-      }
-      return res.status(200).json({
-        success: true,
-        message: "Orders fetched successfully.",
-        result: Orders,
-      });
-    } catch (error) {
-      console.error("Error fetching orders:", error.message);
-      return res.status(500).json({
+        break;
+    }
+
+    // Check if orders were found
+    if (!orders || orders.length === 0) {
+      return res.status(404).json({
         success: false,
-        message: "An error occurred while fetching the latest orders.",
-        error: error.message,
+        message: "No orders found.",
       });
     }
-  };
-  
+
+    // Return the orders
+    return res.status(200).json({
+      success: true,
+      message: "Orders fetched successfully.",
+      result: orders,
+    });
+
+  } catch (error) {
+    console.error("Error fetching orders:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching orders.",
+      error: error.message,
+    });
+  }
+};
+
+
+
   exports.myOrders = async (req, res, next) => {
     try {
       const user_id = req.params.user_id;
