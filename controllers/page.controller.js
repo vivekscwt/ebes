@@ -149,22 +149,22 @@ async function getHomeData(req, res) {
                 // Iterate through each product in the order
                 orderDetails.forEach((product) => {
                     const productId = product.id;
-                    const quantity = product.quantity;
+                    const quantity = product.productQuantity;
 
                     // Update the total quantity for the product ID
                     productSales.set(productId, (productSales.get(productId) || 0) + quantity);
                 });
             });
 
-            // Convert the Map to an array of { productId, totalQuantity } objects
-            const productSalesArrayRaw = Array.from(productSales, ([productId, totalQuantity]) => ({
+            // Convert the Map to an array of { productId, productQuantity } objects
+            const productSalesArrayRaw = Array.from(productSales, ([productId, productQuantity]) => ({
                 productId,
-                totalQuantity,
+                productQuantity,
             }));
             
 
-            // Sort the array by totalQuantity in descending order
-            productSalesArrayRaw.sort((a, b) => b.totalQuantity - a.totalQuantity);
+            // Sort the array by productQuantity in descending order
+            productSalesArrayRaw.sort((a, b) => b.productQuantity - a.productQuantity);
 
             // Extract only product IDs
             const bestSellingProductIds = productSalesArrayRaw.map(item => item.productId);
@@ -176,14 +176,14 @@ async function getHomeData(req, res) {
                     raw: true
                 });
 
-                // Merge product details with totalQuantity
+                // Merge product details with productQuantity
                 productSalesArray = bestSellingProducts.map(product => {
-                    const totalQuantity = productSales.get(product.id) || 0;
-                    return { ...product, totalQuantity };
+                    const productQuantity = productSales.get(product.id) || 0;
+                    return { ...product, productQuantity };
                 });
 
                 // Sort again just in case (to ensure proper order after merging)
-                productSalesArray.sort((a, b) => b.totalQuantity - a.totalQuantity);
+                productSalesArray.sort((a, b) => b.productQuantity - a.productQuantity);
 
                 // Keep only the top 4 best-selling products
                 productSalesArray = productSalesArray.slice(0, 4);
