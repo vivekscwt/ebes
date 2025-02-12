@@ -30,6 +30,7 @@ module.exports = {
           phone: "9883204289",
           password: password,
           userType: "admin",
+          otp: "",
           createdAt: new Date(),
           updatedAt: new Date(),
         },

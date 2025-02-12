@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const { Sequelize } = require('sequelize');
 const { Op } = require("sequelize");
+const { transporter } = require("../config/nodemailer");
 
 const register = async (req, res) => {
   const { fname, lname, email, password, phone, isCustomer } = req.body;
@@ -424,25 +425,11 @@ const usersOverMonth = async (req, res) => {
 }
 
 const forgotPassword = async (req, res) => {
-  const { email, current_password, new_password, confirm_password, user_type } = req.body;
+  const { email, user_type } = req.body;
 
   try {
-    // Validate inputs
-    if (!email || !current_password || !new_password || !confirm_password) {
-      return res.status(400).json({
-        success: false,
-        message: "All fields (email, current password, new password, confirm password, user type) are required.",
-      });
-    }
-
-    // Check if new password and confirm password match
-    if (new_password !== confirm_password) {
-      return res.status(400).json({
-        success: false,
-        message: "New password and confirm password do not match.",
-      });
-    }
-
+    // Determine which model to query based on user type
+    const userModel = user_type === "customer" ? models.User : user_type === "admin" ? models.Admin : null;
 
     if (!userModel) {
       return res.status(400).json({
@@ -461,25 +448,44 @@ const forgotPassword = async (req, res) => {
       });
     }
 
-    // Compare current password with the stored password
-    const isPasswordMatch = await bcryptjs.compare(current_password, user.password);
+    // Generate OTP to send to the user's email
+    const otp = Math.floor(100000 + Math.random() * 900000);
 
-    if (!isPasswordMatch) {
-      return res.status(401).json({
-        success: false,
-        message: "Current password does not match.",
-      });
+    // Store OTP in the database
+    await userModel.update({ otp }, { where: { email } });
+
+    // Set Mail Body
+    const mailBody = mailTemplate(otp);
+
+    if (!mailBody) {
+      throw new Error("MailBody must be provided");
     }
 
-    // Hash the new password and update the user record
-    const hashedNewPassword = await bcryptjs.hash(new_password, 8);
-    user.password = hashedNewPassword;
-    await user.save();
+    // Send OTP to the user's email
+    const mailOptions = {
+      from: `"EBES" <${process.env.MAIL_USER}>`,
+      to: email,
+      subject: "Password Reset OTP",
+      html: mailBody, // Use the `html` property for HTML content
+    };
 
-    return res.status(200).json({
-      success: true,
-      message: "Password updated successfully.",
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Error sending OTP:", error);
+        return res.status(500).json({
+          success: false,
+          message: "An error occurred while sending the OTP.",
+          error: error.message,
+        });
+      } else {
+        console.log("OTP sent:", info.response);
+        return res.status(200).json({
+          success: true,
+          message: "OTP sent successfully.",
+        });
+      }
     });
+
   } catch (error) {
     console.error("Error when changing the password:", error.message);
     return res.status(500).json({
@@ -489,6 +495,146 @@ const forgotPassword = async (req, res) => {
     });
   }
 };
+
+function mailTemplate(otp) {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Confirmation</title>
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: auto; border-collapse: collapse; margin-top: 50px;">
+
+    <!-- Order Summary -->
+    <tr>
+      <td style="padding: 20px; text-align: left; background-color: #f4f4f4;">
+        <h3 style="color: #000;">Password Reset OTP</h3>
+        <p style="margin: 5px 0;"><strong>Your OTP for password reset is: <span style="color:red;">${otp}</span></strong> </p>
+      </td>
+    </tr>
+
+  </table>
+</body>
+</html>
+`;
+}
+
+const verifyOTP = async (req, res) => {
+  const { email, user_type, otp } = req.body;
+
+  try {
+    // Determine which model to query based on user type
+    const userModel = user_type === "customer" ? models.User : user_type === "admin" ? models.Admin : null;
+
+    if (!userModel) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user type. Must be 'customer' or 'admin'.",
+      });
+    }
+
+    // Find user by email
+    const user = await userModel.findOne({ where: { email } });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    // Check if OTP matches
+    if (user.otp !== otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP. Please try again.",
+      });
+    }
+
+    // Clear OTP after successful verification
+    await userModel.update({ otp: null }, { where: { email } });
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP verified successfully.",
+    });
+
+  } catch (error) {
+    console.error("Error verifying OTP:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while verifying the OTP.",
+      error: error.message,
+    });
+  }
+};
+
+const updatePassword = async (req, res) => {
+  const { email, user_type, new_password, confirm_password } = req.body;
+
+  try {
+    // Validate input fields
+    if (!email || !user_type || !new_password || !confirm_password) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields(email, user_type, new_password, confirm_password) are required.",
+      });
+    }
+
+    // Check if passwords match
+    if (new_password !== confirm_password) {
+      return res.status(400).json({
+        success: false,
+        message: "New password and confirm password do not match.",
+      });
+    }
+
+    // Determine which model to query based on user type
+    const userModel = user_type === "customer" ? models.User : user_type === "admin" ? models.Admin : null;
+
+    if (!userModel) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user type. Must be 'customer' or 'admin'.",
+      });
+    }
+
+    // Find user by email
+    const user = await userModel.findOne({ where: { email } });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    // Encrypt the new password
+    const hashedPassword = await bcryptjs.hash(new_password, 8);
+
+    // Update the password in the database
+    await userModel.update(
+      { password: hashedPassword },
+      { where: { email } }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Password updated successfully.",
+    });
+
+  } catch (error) {
+    console.error("Error updating password:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while updating the password.",
+      error: error.message,
+    });
+  }
+};
+
 
 const adminEditProfile = async (req, res) => {
   try {
@@ -544,6 +690,80 @@ const adminEditProfile = async (req, res) => {
   }
 };
 
+//userEditProfile APi
+const userEditProfile = async (req, res) => {
+  try {
+    const { user_id, first_name, last_name, email, phone } = req.body;
+
+    // Validate input fields
+    if (!user_id || !first_name || !last_name || !email || !phone) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required.",
+      });
+    }
+
+    // Find the customer by user_id
+    const customer = await models.User.findOne({ where: { id: user_id } });
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found.",
+      });
+    }
+
+    // Check if the new email is already used by another user
+    if (email !== customer.email) {
+      const existingUser = await models.User.findOne({ where: { email } });
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: "Email is already in use by another customer.",
+        });
+      }
+    }
+
+    // Check if the new phone number is already used by another user
+    if (phone !== customer.phone) {
+      const existingPhoneUser = await models.User.findOne({ where: { phone } });
+      if (existingPhoneUser) {
+        return res.status(400).json({
+          success: false,
+          message: "Phone number is already in use by another customer.",
+        });
+      }
+    }
+
+    // Prepare the update object
+    const updateData = {
+      fname: first_name,
+      lname: last_name,
+      email: email,
+      phone: phone,
+    };
+
+    // Update the customer profile
+    await models.User.update(updateData, {
+      where: { id: user_id },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully.",
+    });
+
+  } catch (error) {
+    console.error("Error when updating the profile:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while updating the profile.",
+      error: error.message,
+    });
+  }
+};
+
+
 const userListing = async (req, res) => {
   try {
     var type = req.params.type;
@@ -571,7 +791,6 @@ const userListing = async (req, res) => {
 
 
 
-
 module.exports = {
   register,
   login,
@@ -580,7 +799,10 @@ module.exports = {
   allCount: allCount,
   usersOverMonth: usersOverMonth,
   forgotPassword: forgotPassword,
+  verifyOTP: verifyOTP,
+  updatePassword: updatePassword,
   adminEditProfile: adminEditProfile,
+  userEditProfile: userEditProfile,
   userListing: userListing
 };
 

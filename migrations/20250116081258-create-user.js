@@ -24,6 +24,9 @@ module.exports = {
       password: {
         type: Sequelize.STRING
       },
+      otp: {
+        type: Sequelize.STRING
+      },
       isCustomer: {
         type: Sequelize.BOOLEAN
       },
