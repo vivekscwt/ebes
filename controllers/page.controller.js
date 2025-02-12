@@ -135,6 +135,7 @@ async function getHomeData(req, res) {
         try {
             // Fetch all orders from the order_products table
             const orders = await models.Order_Product.findAll({
+                where: { payment_status: 'success' },
                 attributes: ['order_details'], // Fetch only the order_details column
                 raw: true,
             });
