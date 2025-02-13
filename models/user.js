@@ -45,6 +45,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true, // Set NOT NULL
       },
+      profileImage: {
+        type: DataTypes.TEXT,
+        allowNull: true
+      },
       isCustomer: {
         type: DataTypes.BOOLEAN,
         allowNull: false,

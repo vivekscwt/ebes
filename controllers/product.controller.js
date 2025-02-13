@@ -8,7 +8,7 @@ async function save(req, res) {
         title: req.body.title,
         excerpt: req.body.excerpt,
         content: req.body.content,
-        productImage: req.body.productImage,
+        productImage: req.body.productImage || 'default-image.png',
         priceRegular: req.body.priceRegular,
         priceOffer: req.body.priceOffer,
         productAuthor: req.userData.userId,

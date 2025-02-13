@@ -27,6 +27,9 @@ module.exports = {
       otp: {
         type: Sequelize.STRING
       },
+      profileImage: {
+        type: Sequelize.TEXT
+      },
       isCustomer: {
         type: Sequelize.BOOLEAN
       },

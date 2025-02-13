@@ -307,7 +307,8 @@ exports.handlePayment = async (req, res, next) => {
 
     const customerData = {
       Name: product_order.customerName,
-      email: product_order.email
+      email: product_order.email,
+      phone: product_order.phone
     };
 
     // Generate a token
@@ -326,7 +327,7 @@ exports.handlePayment = async (req, res, next) => {
       customerProfileId,
       customerPaymentProfileId,
       customerData,
-      "Basic",
+      "Purchase products from EBES",
       token
     );
 
@@ -582,49 +583,49 @@ exports.Orders = async (req, res, next) => {
 
 
 
-  exports.myOrders = async (req, res, next) => {
-    try {
-      const user_id = req.params.user_id;
+exports.myOrders = async (req, res, next) => {
+  try {
+    const user_id = req.params.user_id;
 
-       // Fetch orders with related history data
-        const myOrders = await sequelize.query(
-            `SELECT 
-                Order_Product.*, 
-                Order_History.transactionId, 
-                Order_History.paymentMethod, 
-                Order_History.cardNumber
-             FROM order_products AS Order_Product
-             LEFT JOIN order_histories AS Order_History
-             ON Order_Product.order_id = Order_History.order_id
-             WHERE Order_Product.userId = :user_id`,
-            {
-                replacements: { user_id: user_id }, // Use user_id instead of order_id
-                type: sequelize.QueryTypes.SELECT,
-                raw: true,
-            }
-        );
-  
-      if (!myOrders || myOrders.length === 0) {
-        return res.status(200).json({
-          success: false,
-          message: "No orders found.",
-          result: [],
-        });
-      }
+      // Fetch orders with related history data
+      const myOrders = await sequelize.query(
+          `SELECT 
+              Order_Product.*, 
+              Order_History.transactionId, 
+              Order_History.paymentMethod, 
+              Order_History.cardNumber
+            FROM order_products AS Order_Product
+            LEFT JOIN order_histories AS Order_History
+            ON Order_Product.order_id = Order_History.order_id
+            WHERE Order_Product.userId = :user_id`,
+          {
+              replacements: { user_id: user_id }, // Use user_id instead of order_id
+              type: sequelize.QueryTypes.SELECT,
+              raw: true,
+          }
+      );
+
+    if (!myOrders || myOrders.length === 0) {
       return res.status(200).json({
-        success: true,
-        message: "Orders fetched successfully.",
-        result: myOrders,
+        success: false,
+        message: "No orders found.",
+        result: [],
       });
-    } catch (error) {
-        console.error("Error fetching orders:", error.message);
-        return res.status(500).json({
-          success: false,
-          message: "An error occurred while fetching the latest orders.",
-          error: error.message,
-        });
     }
-  };
+    return res.status(200).json({
+      success: true,
+      message: "Orders fetched successfully.",
+      result: myOrders,
+    });
+  } catch (error) {
+      console.error("Error fetching orders:", error.message);
+      return res.status(500).json({
+        success: false,
+        message: "An error occurred while fetching the latest orders.",
+        error: error.message,
+      });
+  }
+};
   
 
 /**

@@ -5,6 +5,8 @@ require('dotenv').config();
 const { Sequelize } = require('sequelize');
 const { Op } = require("sequelize");
 const { transporter } = require("../config/nodemailer");
+const path = require('path');
+const fs = require('fs');
 
 const register = async (req, res) => {
   const { fname, lname, email, password, phone, isCustomer } = req.body;
@@ -168,6 +170,7 @@ const login = async (req, res) => {
         lname: user.lname,
         email: user.email,
         phone: user.phone,
+        profileImage: user.profileImage || "avatar.png",
         isCustomer: user.isCustomer,
         Cart_data: userCart,
       }
@@ -766,17 +769,24 @@ const userEditProfile = async (req, res) => {
 
 const userListing = async (req, res) => {
   try {
-    var type = req.params.type;
-    if (type == "registered") {
-      var userlisting = await models.User.findAll({ where: { isCustomer: 1 } });
-    }
-    else {
-      var userlisting = await models.User.findAll({ where: { isCustomer: 0 } });
-    }
+    const type = req.params.type;
+    const whereCondition = type === "registered" ? { isCustomer: 1 } : { isCustomer: 0 };
+
+    const users = await models.User.findAll({
+      where: whereCondition,
+      attributes: { exclude: ['password', 'otp'] }, // Exclude password column
+    });
+
+    // Modify the response to replace null profileImage with a default image
+    const modifiedUsers = users.map(user => ({
+      ...user.toJSON(),
+      profileImage: user.profileImage || "avatar.png", // Set default image if null
+    }));
+
     return res.status(200).json({
       success: true,
-      result: userlisting,
-      message: "users fetched successfully.",
+      result: modifiedUsers,
+      message: "Users fetched successfully.",
     });
 
   } catch (error) {
@@ -787,9 +797,49 @@ const userListing = async (req, res) => {
       error: error.message,
     });
   }
-}
+};
 
+const uploadOrEditProfileImage = async (req, res) => {
+  try {
+      const { userId } = req.body;
+      if (!userId) {
+          return res.status(400).json({ success: false, message: "User ID is required." });
+      }
 
+      const user = await models.User.findOne({ where: { id: userId } });
+      if (!user) {
+          return res.status(404).json({ success: false, message: "User not found!" });
+      }
+
+      if (!req.file) {
+          return res.status(400).json({ success: false, message: "No file uploaded." });
+      }
+
+      const newImagePath = `/uploads/${req.file.filename}`;
+      const newImageFileName = req.file.filename;
+
+      // Delete old profile image if it exists
+      if (user.profileImage) {
+          const oldImagePath = path.join(__dirname, '../uploads/', user.profileImage);
+          if (fs.existsSync(oldImagePath)) {
+              fs.unlinkSync(oldImagePath);
+          }
+      }
+
+      // Update profile image in database
+      await models.User.update({ profileImage: newImageFileName }, { where: { id: userId } });
+
+      return res.status(200).json({
+          success: true,
+          message: "Profile image updated successfully.",
+          profileImage: newImageFileName,
+      });
+
+  } catch (error) {
+      console.error("Error updating profile image:", error);
+      return res.status(500).json({ success: false, message: "Something went wrong!" });
+  }
+};
 
 module.exports = {
   register,
@@ -803,6 +853,7 @@ module.exports = {
   updatePassword: updatePassword,
   adminEditProfile: adminEditProfile,
   userEditProfile: userEditProfile,
-  userListing: userListing
+  userListing: userListing,
+  uploadOrEditProfileImage: uploadOrEditProfileImage
 };
 

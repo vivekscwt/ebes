@@ -2,6 +2,19 @@ const { APIContracts, APIControllers, Constants } = require("authorizenet");
 const createTransactionv2 = async (amount, useSavedCard, paymentNonce, customerProfileId, customerPaymentProfileId, customerData, orderDescription, token) => {
     console.log("amount,useSavedCard,paymentNonce,customerProfileId,customerPaymentProfileId,customerData,orderDescription,token",amount,useSavedCard,paymentNonce,customerProfileId,customerPaymentProfileId,customerData,orderDescription,token);
     
+    // let orderDetails = [];
+    // // Ensure orderDetails is parsed if it's a string
+    // if (typeof orderDescription.orderDetails === "string") {
+    //     try {
+    //     orderDetails = JSON.parse(orderDescription.orderDetails);
+    //     } catch (error) {
+    //     console.error("Error parsing orderDetails:", error);
+    //     orderDetails = []; // Default to empty array if parsing fails
+    //     }
+    // } else if (Array.isArray(orderDescription.orderDetails)) {
+    //     orderDetails = orderDescription.orderDetails;
+    // }
+
     const apiLoginId =
         process.env.NODE_ENV === "development"
             ? process.env.AUTHORIZE_NET_API_LOGIN_ID_SANDBOX
@@ -11,7 +24,7 @@ const createTransactionv2 = async (amount, useSavedCard, paymentNonce, customerP
         process.env.NODE_ENV === "development"
             ? process.env.AUTHORIZE_NET_TRANSACTION_KEY_SANDBOX
             : process.env.AUTHORIZE_NET_TRANSACTION_KEY_PRODUCTION;
-    const orderInvoiceNumber = `INS${token.slice(-17).toUpperCase()}`;
+    const orderInvoiceNumber = `EBE${token.slice(-17).toUpperCase()}`;
     console.log("NODE_ENV",process.env.NODE_ENV);
     
 
@@ -28,13 +41,22 @@ const createTransactionv2 = async (amount, useSavedCard, paymentNonce, customerP
     orderDetails.setInvoiceNumber(orderInvoiceNumber);
     
     console.log("Creating Customer Data");
+    let customerName = customerData.Name;
+    let nameParts = customerName.split(" ");
+    let firstName = nameParts[0]; 
+    let lastName = nameParts.slice(1).join(" ");
+
     const customerDataType = new APIContracts.CustomerDataType();
     customerDataType.setEmail(customerData.email);
+    // customerDataType.setFirstName(firstName);
+    // customerDataType.setLastName(lastName);
+    // customerDataType.setphoneNumber(customerData.phone);
 
     console.log("Creating Billing Address");
     const billingAddress = new APIContracts.CustomerAddressType();
-    billingAddress.setFirstName(customerData.firstName);
-    billingAddress.setLastName(customerData.lastName);
+    billingAddress.setFirstName(firstName);
+    billingAddress.setLastName(lastName);
+    billingAddress.setPhoneNumber(customerData.phone);
 
     const transactionRequestType = new APIContracts.TransactionRequestType();
     transactionRequestType.setTransactionType("authCaptureTransaction"); // Can be "authCaptureTransaction" or "authOnlyTransaction"

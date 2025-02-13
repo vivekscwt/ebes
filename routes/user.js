@@ -3,6 +3,7 @@ const express = require('express');
 const userController = require('../controllers/user.controller');
 const checkAuthMiddleware = require('../middleware/check-auth');
 const checkAdminMiddleware = require('../middleware/check-admin');
+const imageUploader = require('../helpers/image-uploader');
 const router = express.Router();
 
 // Route for user registration
@@ -39,7 +40,10 @@ router.patch("/admin-edit-profile",checkAdminMiddleware.checkAdmin, userControll
 router.patch("/user-edit-profile", checkAuthMiddleware.checkAuth, userController.userEditProfile);
 
 //Route for userListing
-router.get("/user-list/:type",checkAdminMiddleware.checkAdmin, userController.userListing)
+router.get("/user-list/:type",checkAdminMiddleware.checkAdmin, userController.userListing);
+
+//Route for User Profile Image Upload
+router.post("/upload-profile-image",  imageUploader.upload.single('profileImage'), userController.uploadOrEditProfileImage);
 
 
 module.exports = router;
