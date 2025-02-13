@@ -216,8 +216,108 @@ async function getHomeData(req, res) {
     }
 }
 
+/**
+ * Get Page Details By Page ID
+ */
+function getPageData(req, res) {
+    const id = req.params.id;
+
+    // Fetch page details by ID
+    models.Page.findByPk(id, {
+    }).then(result => {
+        if (result) {
+            // Convert result to JSON and extract Admin details
+            let responseData = result.toJSON();
+            // responseData.User = responseData.Admin;
+            // delete responseData.Admin;
+
+            // Send success response with page details
+            res.status(200).json({
+                success: true,
+                message: "Page fetched successfully.",
+                result: responseData
+            });
+        } else {
+            // Send not found response if page not found
+            res.status(404).json({
+                success: false,
+                message: "Page not found!"
+            })
+        }
+    }).catch(error => {
+        // Log error and send internal server error response
+        console.error("Error fetching page:", error);
+        res.status(500).json({
+            success: false,
+            message: "Something went wrong!",
+            error: error.message,
+        })
+    });
+}
+
+//Update Page Data by Page ID
+function updatePageData(req, res) {
+    const id = req.params.id;
+    const { pageHeading, pageContent, bannerImage } = req.body;
+
+    // Validate input fields
+    if (!pageHeading || !pageContent) {
+        return res.status(400).json({
+          success: false,
+          message: "All pageHeading &  pageContent field are required.",
+        });
+      }
+
+
+    // Fetch page details by ID
+    models.Page.findByPk(id, {
+    }).then(result => {
+        if (result) {
+            // Update page details
+            models.Page.update({
+                pageHeading: pageHeading,
+                pageContent: pageContent,
+                bannerImage: bannerImage || "default-banner.png",
+            }, {            
+                where: { id: id }
+            }).then(() => {
+                // Send success response
+                res.status(200).json({
+                    success: true,
+                    message: "Page updated successfully.",
+                    result: result
+                });
+            }).catch(error => {
+                // Log error and send internal server error response
+                console.error("Error updating page:", error);
+                res.status(500).json({
+                    success: false,
+                    message: "Something went wrong!",
+                    error: error.message,
+                })
+            });
+        } else {
+            // Send not found response if page not found
+            res.status(404).json({
+                success: false,
+                message: "Page not found!"
+            })
+        }
+    }).catch(error => {
+        // Log error and send internal server error response        
+        console.error("Error fetching page:", error);
+        res.status(500).json({
+            success: false,
+            message: "Something went wrong!",
+            error: error.message,
+        })
+    });
+}
+
 module.exports = {
     saveBanner: saveBanner,
     getAllBanner: getAllBanner,
-    getHomeData: getHomeData
+    getHomeData: getHomeData,
+    getPageData: getPageData,
+    updatePageData: updatePageData
 }

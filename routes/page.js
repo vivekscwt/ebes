@@ -9,6 +9,8 @@ router.post("/home-banner", checkAdminMiddleware.checkAdmin, pageController.save
 router.get("/home-banner", pageController.getAllBanner);
 router.get("/home", pageController.getHomeData);
 
+router.get("/page-data/:id", pageController.getPageData);
+router.patch("/page-data/:id", checkAdminMiddleware.checkAdmin, pageController.updatePageData);
 
 
 module.exports = router;
