@@ -9,6 +9,7 @@ const { v4: uuidv4 } = require('uuid');
 const { QueryTypes } = require('sequelize');
 const { sequelize } = require('../models');  // Ensure the path is correct
 const { transporter } = require("../config/nodemailer");
+const bcryptjs = require('bcryptjs');
 
 
 
@@ -110,17 +111,35 @@ function generateToken() {
 };
 
 function invoice(billingData) {
+  let orderDetails = [];
+
+  // Ensure orderDetails is parsed if it's a string
+  if (typeof billingData.orderDetails === "string") {
+    try {
+      orderDetails = JSON.parse(billingData.orderDetails);
+    } catch (error) {
+      console.error("Error parsing orderDetails:", error);
+      orderDetails = []; // Default to empty array if parsing fails
+    }
+  } else if (Array.isArray(billingData.orderDetails)) {
+    orderDetails = billingData.orderDetails;
+  }
+
   return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Order Confirmation</title>
+  <style>
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    th { background-color: #f4f4f4; }
+  </style>
 </head>
 <body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
   <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: auto; border-collapse: collapse;">
     <!-- Header -->
-
 
     <!-- Purchase Details -->
     <tr>
@@ -132,12 +151,33 @@ function invoice(billingData) {
       </td>
     </tr>
 
-    <!-- Order Summary -->
+    <!-- Order Summary Table -->
     <tr>
       <td style="padding: 20px; text-align: left; background-color: #f4f4f4;">
         <h3 style="color: #000;">Order Summary</h3>
-        <p style="margin: 5px 0;"><strong>Unit Price:</strong> $${billingData.unitPrice}</p>
-        <p style="margin: 5px 0;"><strong>Total:</strong> $${billingData.total}</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Unit Price</th>
+              <th>Quantity</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${orderDetails.map(item => {
+              let unitPrice = item.priceOffer !== null ? item.priceOffer : item.priceRegular;
+              return `
+                <tr>
+                  <td>${item.title}</td>
+                  <td>$${unitPrice.toFixed(2)}</td>
+                  <td>${item.productQuantity}</td>
+                  <td>$${(unitPrice * item.productQuantity).toFixed(2)}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
       </td>
     </tr>
 
@@ -151,50 +191,52 @@ function invoice(billingData) {
       </td>
     </tr>
 
-    <!-- Transaction Approval -->
-    <tr>
-      <td style="padding: 20px; text-align: left; background-color: #f4f4f4;">
-        <h3 style="color: #000;">Transaction Approved</h3>
-        <p style="margin: 5px 0;"><strong>Auth Code:</strong> ${billingData.authCode}</p>
-        <p style="margin: 5px 0;"><strong>Transaction ID:</strong> ${billingData.transactionId}</p>
-      </td>
-    </tr>
-
     <!-- Thank You Message -->
     <tr>
-      <td style="padding: 20px; text-align: left;">
+      <td style="padding: 20px; text-align: left; background-color: #f4f4f4;">
         <h3 style="color: #000;">Thank You for Your Purchase!</h3>
-        <p>You have successfully purchased product. If you have any questions or need further assistance, feel free to contact us.</p>
+        <p>You have successfully purchased product(s). If you have any questions or need further assistance, feel free to contact us.</p>
       </td>
     </tr>
 
   </table>
 </body>
-</html>
-`
-};
-
-const sendEmail = async (to, subject, html) => {
-  // Check if all parameters are provided
-  if (!to || !subject || !html) {
-    throw new Error("All parameters (to, subject, html) must be provided");
-  }
-
-  const mailOptions = {
-    from: `"Ebes" <${process.env.MAIL_USER}>`,
-    to,
-    subject,
-    html,
-  };
-};
+</html>`;
+}
 
 exports.createdOrder = async (req, res, next) => {
-  const { amount, product_details, firstName, lastName, email, phone, order_pickup_time } = req.body;
-  const { user_id } = req.body;
+  const { amount, product_details, firstName, lastName, email, phone, order_pickup_time, user_id } = req.body;
+
   try {
+    // Validate product_details
     if (!Array.isArray(product_details) || product_details.length === 0) {
       return next(new BadRequestError("Invalid product_details. It should be a non-empty array."));
     }
+
+    let newUserId = user_id;
+    // If user_id is not provided, create a new user
+    if (!user_id) {
+      const existingUser = await models.User.findOne({
+        where: { email },
+      });
+
+      if (existingUser) {
+        newUserId = existingUser.id; // Use existing user ID if email is found
+      } else {
+        // Create new user
+        const newUser = await models.User.create({
+          fname: firstName,
+          lname: lastName,
+          email,
+          phone,
+          password: await bcryptjs.hash(email, 10), // Set a default password
+          isCustomer: false,
+        });
+
+        newUserId = newUser.id;
+      }
+    }
+
 
     // Fetch the latest order ID from the database
     const latestOrder = await models.Order_Product.findOne({
@@ -217,19 +259,17 @@ exports.createdOrder = async (req, res, next) => {
     const orderDetails = JSON.stringify(product_details);
     console.log("Parsed Order Details:", orderDetails);
 
-    const customerData = { firstName, lastName, email, phone };
-
     const orderData = {
-      order_id: newOrderId, // Use the generated order ID
-      customerName: customerData?.firstName + " " + customerData?.lastName,
-      email: email,
-      phone: phone,
+      order_id: newOrderId,
+      customerName: `${firstName} ${lastName}`,
+      email,
+      phone,
       total_amount: amount,
       payment_status: 'pending',
       delivery_status: 'pending',
       order_details: orderDetails,
-      userId: user_id,
-      order_pickup_time: order_pickup_time,
+      userId: newUserId,
+      order_pickup_time,
     };
 
     // Create the order in the database
@@ -242,8 +282,8 @@ exports.createdOrder = async (req, res, next) => {
     });
 
   } catch (error) {
-    console.error("Payment processing error:", error);
-    next(new UnhandledError("Payment processing error"));
+    console.error("Order creation error:", error);
+    next(new UnhandledError("Order creation error"));
   }
 };
 
@@ -258,7 +298,7 @@ exports.handlePayment = async (req, res, next) => {
   try {
     const product_order = await models.Order_Product.findOne({
       where: { order_id: order_id },
-      attributes: ["customerName", "email", "phone"],
+      attributes: ["customerName", "email", "phone", "order_details"],
       raw: true,
     });
     if (!product_order) {
@@ -290,7 +330,7 @@ exports.handlePayment = async (req, res, next) => {
       token
     );
 
-    if (transactionResponse.getResponseCode() === "1") {
+    if (String(transactionResponse.getResponseCode()) === "1") {
       
       const transactionId = transactionResponse.getTransId();
 
@@ -317,6 +357,7 @@ exports.handlePayment = async (req, res, next) => {
         cardNumber: `**** **** **** ${transactionResponse.accountNumber.slice(4)}`,
         authCode: transactionResponse.getAuthCode(),
         transactionId: transactionId,
+        orderDetails: product_order.order_details
       };
 
       // Insert billing data into the database
@@ -333,28 +374,48 @@ exports.handlePayment = async (req, res, next) => {
         userId: user_id,
       });
 
-      var order_product_status={
-        delivery_status: 'pending',
-        payment_status: 'success'
-      };
-
-      await models.Order_Product.update(order_product_status,
+      // Update Order status
+      await models.Order_Product.update(
+        { delivery_status: 'pending', payment_status: 'success' },
         { where: { order_id: order_id } }
       );
 
-      const invoice_template = invoice(billingData);
-      sendEmail(customerData.email, "Invoice", invoice_template);
+      // Clear user cart after successful payment
+      if (user_id) {
+        await models.User_cart.destroy({ where: { user_id: user_id } });
+      }
 
-      // Send back the transactionId and token to the client
-      // return sendSuccess(res, { transactionId, token }, "Payment successful");
-      return res.json({
-        success: true,
-        message: "Payment successful",
-        result: {
-          transactionId: transactionId,
-          token: token
-        }
-      });
+      // Set Mail Body
+      const mailBody = invoice(billingData);
+
+      if (!mailBody) {
+        throw new Error("MailBody must be provided");
+      }
+
+      // Send invoice to the user's email
+      const mailOptions = {
+        from: `"EBES" <${process.env.MAIL_USER}>`,
+        to: customerData.email,
+        subject: "EBE New Order Invoice",
+        html: mailBody,
+      };
+
+      try {
+        await transporter.sendMail(mailOptions);
+        console.log("New order Invoice sent");
+        return res.status(200).json({
+          success: true,
+          message: "Payment successful",
+          result: { transactionId, token }
+        });
+      } catch (error) {
+        console.error("Error sending invoice:", error);
+        return res.status(500).json({
+          success: false,
+          message: "Invoice email failed",
+          error: error.message,
+        });
+      }
       
     } else {
         console.log("Payment failed:", transactionResponse);
