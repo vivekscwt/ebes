@@ -13,6 +13,7 @@ const cartRoutes = require('./routes/cartRoutes')
 const pageRoutes = require('./routes/page')
 const { Admin } = require("./models");
 const orderRoutes = require("./routes/orderRoutes");
+const settingRoutes = require("./routes/setting");
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use("/api/times", timeManagementRoutes)
 app.use("/api/orders", orderRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/pages", pageRoutes);
+app.use("/api/settings", settingRoutes);
 
 const PORT = process.env.PORT || 3001;
 
