@@ -587,7 +587,6 @@ exports.myOrders = async (req, res, next) => {
   try {
     const user_id = req.params.user_id;
 
-      // Fetch orders with related history data
       const myOrders = await sequelize.query(
           `SELECT 
               Order_Product.*, 
@@ -599,7 +598,7 @@ exports.myOrders = async (req, res, next) => {
             ON Order_Product.order_id = Order_History.order_id
             WHERE Order_Product.userId = :user_id`,
           {
-              replacements: { user_id: user_id }, // Use user_id instead of order_id
+              replacements: { user_id: user_id }, 
               type: sequelize.QueryTypes.SELECT,
               raw: true,
           }
