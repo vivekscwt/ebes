@@ -130,7 +130,7 @@ function invoice(billingData) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Order Confirmation</title>
+  <title>Order Invoice</title>
   <style>
     table { width: 100%; border-collapse: collapse; }
     th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
@@ -139,13 +139,22 @@ function invoice(billingData) {
 </head>
 <body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
   <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: auto; border-collapse: collapse;">
+
     <!-- Header -->
+    <tr>
+      <td style="padding: 20px; text-align: left; background-color:#ffeb00;">
+        <h3 style="color: #000;">Order Invoice</h3>
+        <p style="margin: 5px 0;">Thank you for your order! Below is your invoice.</p>
+      </td>
+    </tr>
 
     <!-- Purchase Details -->
     <tr>
       <td style="padding: 20px; text-align: left;">
-        <h3 style="color: #000;">Order Confirmation</h3>
+        <h3 style="color: #000;">Invoice Details</h3>
+        <p style="margin: 5px 0;"><strong>Order ID:</strong> ${billingData.order_id}</p>
         <p style="margin: 5px 0;"><strong>Date of Purchase:</strong> ${billingData.dateOfPurchase}</p>
+        <p style="margin: 5px 0;"><strong>Invoice Number:</strong> ${billingData.invoiceNumber}</p>
         <p style="margin: 5px 0;"><strong>Customer Name:</strong> ${billingData.customerName}</p>
         <p style="margin: 5px 0;"><strong>Email:</strong> ${billingData.email}</p>
       </td>
@@ -191,11 +200,11 @@ function invoice(billingData) {
       </td>
     </tr>
 
-    <!-- Thank You Message -->
+    <!-- Footer -->
     <tr>
-      <td style="padding: 20px; text-align: left; background-color: #f4f4f4;">
-        <h3 style="color: #000;">Thank You for Your Purchase!</h3>
-        <p>You have successfully purchased product(s). If you have any questions or need further assistance, feel free to contact us.</p>
+      <td style="padding: 20px; text-align: center; font-size: 14px; background-color:#ffeb00;">
+        <p>If you have any questions regarding your order, feel free to contact our support team.</p>
+        <p>Best Regards,<br>EBES Team</p>
       </td>
     </tr>
 
@@ -358,7 +367,8 @@ exports.handlePayment = async (req, res, next) => {
         cardNumber: `**** **** **** ${transactionResponse.accountNumber.slice(4)}`,
         authCode: transactionResponse.getAuthCode(),
         transactionId: transactionId,
-        orderDetails: product_order.order_details
+        orderDetails: product_order.order_details,
+        order_id: order_id
       };
 
       // Insert billing data into the database
@@ -587,7 +597,6 @@ exports.myOrders = async (req, res, next) => {
   try {
     const user_id = req.params.user_id;
 
-      // Fetch orders with related history data
       const myOrders = await sequelize.query(
           `SELECT 
               Order_Product.*, 
@@ -599,7 +608,7 @@ exports.myOrders = async (req, res, next) => {
             ON Order_Product.order_id = Order_History.order_id
             WHERE Order_Product.userId = :user_id`,
           {
-              replacements: { user_id: user_id }, // Use user_id instead of order_id
+              replacements: { user_id: user_id }, 
               type: sequelize.QueryTypes.SELECT,
               raw: true,
           }

@@ -31,18 +31,12 @@ const register = async (req, res) => {
     });
 
     if (adminExists) {
-      if (adminExists.email === email) {
         return res.status(409).json({
-          success: false,
-          message: "Email is already registered in Admin!",
+            success: false,
+            message: adminExists.email === email
+                ? "Email is already registered in Admin!"
+                : "Phone is already registered in Admin!",
         });
-      }
-      if (adminExists.phone === phone) {
-        return res.status(409).json({
-          success: false,
-          message: "Phone is already registered in Admin!",
-        });
-      }
     }
 
     const userExists = await models.User.findOne({
@@ -55,17 +49,68 @@ const register = async (req, res) => {
     });
 
     if (userExists) {
-      if (userExists.email === email) {
-        return res.status(409).json({
-          success: false,
-          message: "Email is already registered!",
-        });
-      }
-      if (userExists.phone === phone) {
-        return res.status(409).json({
-          success: false,
-          message: "Phone is already registered!",
-        });
+      if (userExists.email === email || userExists.phone === phone) {
+        // Check if the existing user is already a customer
+        if(userExists.isCustomer == true){
+          return res.status(409).json({
+              success: false,
+              message: userExists.email === email
+                  ? "Email is already registered!"
+                  : "Phone is already registered!",
+          });
+        }
+        // Convert guest user to customer & update password
+        const salt = await bcryptjs.genSalt(10);
+        const hashedPassword = await bcryptjs.hash(password, salt);
+
+        const [updatedRowCount] = await models.User.update(
+          { isCustomer: true, password: hashedPassword, fname, lname },
+          { where: { id: userExists.id } }
+        );
+
+        if (updatedRowCount === 0) {
+          return res.status(500).json({ success: false, message: "Failed to update user." });
+        }
+
+        const updatedUser = await models.User.findOne({ where: { id: userExists.id } });
+
+        // Set Mail Body
+        const mailBody = registerMailBody(updatedUser);
+        if (!mailBody) {
+          throw new Error("MailBody must be provided");
+        }
+
+        // Send Registration Success to the user's email
+        const mailOptions = {
+          from: `"EBES" <${process.env.MAIL_USER}>`,
+          to: updatedUser.email,
+          subject: "EBE New User Registration",
+          html: mailBody,
+        };
+
+        try {
+          await transporter.sendMail(mailOptions);
+          console.log("New User Registration Email sent successfully");
+          return res.status(201).json({
+              success: true,
+              message: "User created successfully",
+              result: {
+                  id: updatedUser.id,
+                  fname: updatedUser.fname,
+                  lname: updatedUser.lname,
+                  email: updatedUser.email,
+                  phone: updatedUser.phone,
+                  isCustomer: true,
+              },
+          });
+        } catch (error) {
+          console.error("Error sending Registration Email:", error);
+          return res.status(500).json({
+            success: false,
+            message: "Registration email failed",
+            error: error.message,
+          });
+        }
       }
     }
 
@@ -83,18 +128,45 @@ const register = async (req, res) => {
       isCustomer,
     });
 
-    return res.status(201).json({
-      success: true,
-      message: "User created successfully",
-      result: {
-        id: newUser.id,
-        fname: newUser.fname,
-        lname: newUser.lname,
-        email: newUser.email,
-        phone: newUser.phone,
-        isCustomer,
-      },
-    });
+    // Set Mail Body
+    const mailBody = registerMailBody(newUser);
+    if (!mailBody) {
+      throw new Error("MailBody must be provided");
+    }
+
+    // Send Registration Success to the user's email
+    const mailOptions = {
+      from: `"EBES" <${process.env.MAIL_USER}>`,
+      to: newUser.email,
+      subject: "EBE New User Registration",
+      html: mailBody,
+    };
+
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log("New User Registration Email sent successfully");
+
+      return res.status(201).json({
+        success: true,
+        message: "User created successfully.",
+        result: {
+          id: newUser.id,
+          fname: newUser.fname,
+          lname: newUser.lname,
+          email: newUser.email,
+          phone: newUser.phone,
+          isCustomer,
+        },
+      });
+    } catch (error) {
+      console.error("Error sending Registration Email:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Registration email failed",
+        error: error.message,
+      });
+    }
+    
   } catch (error) {
     console.error("Error in user registration:", error.message);
     return res.status(500).json({
@@ -104,6 +176,55 @@ const register = async (req, res) => {
     });
   }
 };
+
+function registerMailBody(newUser) {
+
+return `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    th { background-color: #f4f4f4; }
+  </style>
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: auto; border-collapse: collapse;">
+    
+    <!-- Header -->
+    <tr>
+      <td style="padding: 20px; text-align: left; background-color:#ffeb00;">
+        <h3 style="color: #000;">Welcome to EBES!</h3>
+        <p style="margin: 5px 0;">Thank you for registering with EBES. Your account has been successfully created.</p>
+      </td>
+    </tr>
+
+    <!-- Customer Details -->
+    <tr>
+      <td style="padding: 20px; text-align: left; background-color: #f4f4f4;">
+        <h3 style="color: #000;">Your Registration Details</h3>
+        <p style="margin: 5px 0;"><strong>Name:</strong> ${newUser.fname} ${newUser.lname}</p>
+        <p style="margin: 5px 0;"><strong>Email:</strong> ${newUser.email}</p>
+        <p style="margin: 5px 0;"><strong>Phone:</strong> ${newUser.phone}</p>
+        <p style="margin: 5px 0;"><strong>Password:</strong> [Hidden for security]</p>
+        <p style="margin: 10px 0;"><em>For security reasons, we do not display passwords. If you didn’t set a password during registration, please reset it.</em></p>
+      </td>
+    </tr>
+
+    <!-- Footer -->
+    <tr>
+      <td style="padding: 20px; text-align: center; font-size: 14px; background-color:#ffeb00;">
+        <p>If you have any questions, feel free to contact our support team.</p>
+        <p>Best Regards,<br>EBES Team</p>
+      </td>
+    </tr>
+
+  </table>
+</body>
+</html>
+`;
+}
+
 
 const login = async (req, res) => {
   const { email, password } = req.body;
@@ -503,25 +624,43 @@ function mailTemplate(otp) {
   return `<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Order Confirmation</title>
+  <style>
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    th { background-color: #f4f4f4; }
+  </style>
 </head>
 <body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
-  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: auto; border-collapse: collapse; margin-top: 50px;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: auto; border-collapse: collapse;">
 
-    <!-- Order Summary -->
+    <!-- Header -->
+    <tr>
+      <td style="padding: 20px; text-align: left; background-color:#ffeb00;">
+        <h3 style="color: #000;">Password Reset Request</h3>
+        <p style="margin: 5px 0;">You have requested to reset your password. Use the OTP below to proceed.</p>
+      </td>
+    </tr>
+
+    <!-- OTP Details -->
     <tr>
       <td style="padding: 20px; text-align: left; background-color: #f4f4f4;">
-        <h3 style="color: #000;">Password Reset OTP</h3>
-        <p style="margin: 5px 0;"><strong>Your OTP for password reset is: <span style="color:red;">${otp}</span></strong> </p>
+        <h3 style="color: #000;">Your OTP</h3>
+        <p style="margin: 5px 0; font-size: 18px;"><strong>OTP:</strong> <span style="color:red; font-size: 22px;">${otp}</span></p>
+        <p style="margin: 10px 0;"><em>This OTP is valid for a limited time. Do not share it with anyone.</em></p>
+      </td>
+    </tr>
+
+    <!-- Footer -->
+    <tr>
+      <td style="padding: 20px; text-align: center; font-size: 14px; background-color:#ffeb00;">
+        <p>If you did not request this, please ignore this email.</p>
+        <p>Best Regards,<br>EBES Team</p>
       </td>
     </tr>
 
   </table>
 </body>
-</html>
-`;
+</html>`;
 }
 
 const verifyOTP = async (req, res) => {
@@ -696,28 +835,29 @@ const adminEditProfile = async (req, res) => {
 //userEditProfile APi
 const userEditProfile = async (req, res) => {
   try {
-    const { user_id, first_name, last_name, email, phone } = req.body;
+    const { first_name, last_name, email, phone } = req.body;
+    const userId = req.userData.userId; // Extract user ID from token
 
     // Validate input fields
-    if (!user_id || !first_name || !last_name || !email || !phone) {
+    if (!first_name || !last_name || !email || !phone) {
       return res.status(400).json({
         success: false,
         message: "All fields are required.",
       });
     }
 
-    // Find the customer by user_id
-    const customer = await models.User.findOne({ where: { id: user_id } });
+    // Find the user by ID from token
+    const user = await models.User.findOne({ where: { id: userId } });
 
-    if (!customer) {
+    if (!user) {
       return res.status(404).json({
         success: false,
-        message: "Customer not found.",
+        message: "User not found.",
       });
     }
 
-    // Check if the new email is already used by another user
-    if (email !== customer.email) {
+    // Check if the new email is already in use by another user
+    if (email !== user.email) {
       const existingUser = await models.User.findOne({ where: { email } });
       if (existingUser) {
         return res.status(400).json({
@@ -728,7 +868,7 @@ const userEditProfile = async (req, res) => {
     }
 
     // Check if the new phone number is already used by another user
-    if (phone !== customer.phone) {
+    if (phone !== user.phone) {
       const existingPhoneUser = await models.User.findOne({ where: { phone } });
       if (existingPhoneUser) {
         return res.status(400).json({
@@ -738,18 +878,11 @@ const userEditProfile = async (req, res) => {
       }
     }
 
-    // Prepare the update object
-    const updateData = {
-      fname: first_name,
-      lname: last_name,
-      email: email,
-      phone: phone,
-    };
-
-    // Update the customer profile
-    await models.User.update(updateData, {
-      where: { id: user_id },
-    });
+    // Update the user profile
+    await models.User.update(
+      { fname: first_name, lname: last_name, email, phone },
+      { where: { id: userId } }
+    );
 
     return res.status(200).json({
       success: true,
@@ -765,6 +898,7 @@ const userEditProfile = async (req, res) => {
     });
   }
 };
+
 
 
 const userListing = async (req, res) => {
