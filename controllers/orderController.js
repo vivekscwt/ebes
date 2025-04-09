@@ -154,7 +154,6 @@ function invoice(billingData) {
         <h3 style="color: #000;">Invoice Details</h3>
         <p style="margin: 5px 0;"><strong>Order ID:</strong> ${billingData.order_id}</p>
         <p style="margin: 5px 0;"><strong>Date of Purchase:</strong> ${billingData.dateOfPurchase}</p>
-        <p style="margin: 5px 0;"><strong>Invoice Number:</strong> ${billingData.invoiceNumber}</p>
         <p style="margin: 5px 0;"><strong>Customer Name:</strong> ${billingData.customerName}</p>
         <p style="margin: 5px 0;"><strong>Email:</strong> ${billingData.email}</p>
       </td>
@@ -668,11 +667,87 @@ exports.updateOrderStatus = async (req, res, next) => {
             });
         }
 
-        // Respond with success
-        return res.status(200).json({
+        // Fetch order data from order_products
+        const orderProduct = await models.Order_Product.findOne({ where: { order_id: orderId } });
+        if (!orderProduct) {
+          return res.status(404).json({ success: false, message: "Order product not found." });
+        }
+
+        // Fetch transaction/payment info from order_histories
+        const orderHistory = await models.Order_History.findOne({ where: { order_id: orderId } });
+        if (!orderHistory) {
+          return res.status(404).json({ success: false, message: "Order history not found." });
+        }
+
+        // Parse order details safely
+        let orderDetails = [];
+        try {
+          orderDetails = typeof orderProduct.order_details === "string"
+            ? JSON.parse(orderProduct.order_details)
+            : orderProduct.order_details;
+        } catch (error) {
+          console.error("Error parsing order details:", error);
+        }
+
+        // Build billing data
+        const billingData = {
+          order_id: orderId,
+          dateOfPurchase: orderHistory.purchaseDate.toLocaleDateString(),
+          customerName: orderProduct.customerName,
+          email: orderProduct.email,
+          orderDetails: orderDetails,
+          paymentMethod: orderHistory.paymentMethod,
+          cardNumber: orderHistory.cardNumber,
+          total: orderProduct.total_amount,
+          delivery_status: orderProduct.delivery_status
+        };
+
+        // Generate email body
+        const mailBody = orderStatusMailbody(billingData);
+        if (!mailBody) {
+          throw new Error("Mail body must be provided.");
+        }
+
+        // Set subject based on status
+        let subjectLine = "Your Order Status Has Been Updated";
+        switch (delivery_status) {
+          case "pending":
+            subjectLine = "Order Received - Status: Pending";
+            break;
+          case "processing":
+            subjectLine = "Order is Being Processed";
+            break;
+          case "ready":
+            subjectLine = "Your Order is Ready for Delivery";
+            break;
+          case "completed":
+            subjectLine = "Order Completed - Thank You!";
+            break;
+        }
+
+        // Send email
+        const mailOptions = {
+          from: `"EBES" <${process.env.MAIL_USER}>`,
+          to: orderProduct.email,
+          subject: subjectLine,
+          html: mailBody,
+        };
+
+        try {
+          await transporter.sendMail(mailOptions);
+          console.log("Order status updated and email sent.");
+          return res.status(200).json({
             success: true,
-            message: "Delivery status updated successfully.",
-        });
+            message: "Order status updated and email sent successfully.",
+          });
+        } catch (emailError) {
+          console.error("Error sending email:", emailError);
+          return res.status(500).json({
+            success: false,
+            message: "Order status updated, but email failed.",
+            error: emailError.message,
+          });
+        }
     } catch (error) {
         console.error("Error updating delivery status:", error.message);
         return res.status(500).json({
@@ -682,3 +757,118 @@ exports.updateOrderStatus = async (req, res, next) => {
         });
     }
 };
+
+function orderStatusMailbody(billingData) {
+  let orderDetails = [];
+
+  // Ensure orderDetails is parsed if it's a string
+  if (typeof billingData.orderDetails === "string") {
+    try {
+      orderDetails = JSON.parse(billingData.orderDetails);
+    } catch (error) {
+      console.error("Error parsing orderDetails:", error);
+      orderDetails = []; // Default to empty array if parsing fails
+    }
+  } else if (Array.isArray(billingData.orderDetails)) {
+    orderDetails = billingData.orderDetails;
+  }
+
+  const maskCardNumber = (cardNumber) => {
+    if (!cardNumber || cardNumber.length < 4) return 'xxxx';
+    return cardNumber.replace(/.(?=.{4})/g, 'x');
+  };
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Invoice</title>
+  <style>
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    th { background-color: #f4f4f4; }
+  </style>
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: auto; border-collapse: collapse;">
+
+    <!-- Header -->
+    <tr>
+      <td style="padding: 20px; text-align: left; background-color:#ffeb00;">
+        <h3 style="color: #000;">Order Invoice</h3>
+        <p style="margin: 5px 0;">Thank you for your order! Below is your invoice.</p>
+      </td>
+    </tr>
+
+    <!-- Purchase Details -->
+    <tr>
+      <td style="padding: 20px; text-align: left;">
+        <h3 style="color: #000;">Invoice Details</h3>
+        <p style="margin: 5px 0;"><strong>Order ID:</strong> ${billingData.order_id}</p>
+        <p style="margin: 5px 0;"><strong>Date of Purchase:</strong> ${billingData.dateOfPurchase}</p>
+        <p style="margin: 5px 0;"><strong>Invoice Number:</strong> ${billingData.invoiceNumber}</p>
+        <p style="margin: 5px 0;"><strong>Customer Name:</strong> ${billingData.customerName}</p>
+        <p style="margin: 5px 0;"><strong>Email:</strong> ${billingData.email}</p>
+        <p style="margin: 5px 0;"><strong>Order Status:</strong> ${billingData.delivery_status || "Pending"}</p>
+      </td>
+    </tr>
+
+    <!-- Order Summary Table -->
+    <tr>
+      <td style="padding: 20px; text-align: left; background-color: #f4f4f4;">
+        <h3 style="color: #000;">Order Summary</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Unit Price</th>
+              <th>Quantity</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${orderDetails.map(item => {
+              const unitPrice = item.priceOffer !== null && item.priceOffer !== undefined
+                ? parseFloat(item.priceOffer)
+                : parseFloat(item.priceRegular);
+
+              const quantity = parseInt(item.productQuantity);
+              const total = unitPrice * quantity;
+
+              return `
+                <tr>
+                  <td>${item.title}</td>
+                  <td>$${unitPrice.toFixed(2)}</td>
+                  <td>${quantity}</td>
+                  <td>$${total.toFixed(2)}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </td>
+    </tr>
+
+    <!-- Payment Details -->
+    <tr>
+      <td style="padding: 20px; text-align: left;">
+        <h3 style="color: #000;">Payment Details</h3>
+        <p style="margin: 5px 0;"><strong>Payment Method:</strong> ${billingData.paymentMethod}</p>
+        <p style="margin: 5px 0;"><strong>Credit Card Number:</strong> ${maskCardNumber(billingData.cardNumber)}</p>
+        <p style="margin: 5px 0;"><strong>Total Amount:</strong> $${parseFloat(billingData.total).toFixed(2)}</p>
+      </td>
+    </tr>
+
+    <!-- Footer -->
+    <tr>
+      <td style="padding: 20px; text-align: center; font-size: 14px; background-color:#ffeb00;">
+        <p>If you have any questions regarding your order, feel free to contact our support team.</p>
+        <p>Best Regards,<br>EBES Team</p>
+      </td>
+    </tr>
+
+  </table>
+</body>
+</html>`;
+}
