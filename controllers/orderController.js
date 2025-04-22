@@ -679,6 +679,47 @@ exports.updateOrderStatus = async (req, res, next) => {
           return res.status(404).json({ success: false, message: "Order history not found." });
         }
 
+        // Create notification message based on status
+        let notificationMessage = "";
+        switch (delivery_status) {
+            case "pending":
+                notificationMessage = `Order ID #${orderId} has been received and is pending processing.`;
+                break;
+            case "processing":
+                notificationMessage = `Order ID #${orderId} is being processed.`;
+                break;
+            case "ready":
+                notificationMessage = `Order ID #${orderId} is ready for delivery.`;
+                break;
+            case "completed":
+                notificationMessage = `Order ID #${orderId} has been completed. Thank you for your purchase!`;
+                break;
+        }
+
+        // Check if notification exists
+        const existingNotification = await models.Notification.findOne({
+          where: {
+              user_id: orderProduct.userId,
+              order_id: orderId
+          }
+        });
+
+        if (existingNotification) {
+          // Update existing notification
+          await existingNotification.update({
+              message_body: notificationMessage,
+              updatedAt: new Date()
+          });
+        } else {
+          // Create new notification
+          await models.Notification.create({
+              type: "private",
+              message_body: notificationMessage,
+              user_id: orderProduct.userId,
+              order_id: orderId
+          });
+        }
+
         // Parse order details safely
         let orderDetails = [];
         try {
