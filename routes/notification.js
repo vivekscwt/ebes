@@ -9,7 +9,7 @@ router.post("/", checkAdminMiddleware.checkAdmin, notificationController.save);
 router.get("/", notificationController.index);
 router.patch("/:id", checkAdminMiddleware.checkAdmin, notificationController.update);
 router.delete("/:id", checkAdminMiddleware.checkAdmin, notificationController.destroy);
-router.get("/:user_id", notificationController.showUserNotifications);
+router.get("/:user_id", checkAuthMiddleware.checkAuth, notificationController.showUserNotifications);
 
 
 

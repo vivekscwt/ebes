@@ -122,11 +122,33 @@ async function getHomeData(req, res) {
         const categories = await models.ProductCategory.findAll();
 
         // Retrieve the latest 6 products ordered by 'createdAt' in descending order
-        const latestProducts = await models.Product.findAll({
-            where: { status: 1, isPublic: true },
-            order: [['createdAt', 'DESC']],
-            limit: 6
+        // const latestProducts = await models.Product.findAll({
+        //     where: { status: 1, isPublic: true },
+        //     order: [['createdAt', 'DESC']],
+        //     limit: 6
+        // });
+
+        const Breadcategory = await models.ProductCategory.findOne({
+            where: { id: 5 }, // Assuming 5 is the ID for "Cuban Bread & Sandwiches"
+            include: [
+                {
+                    model: models.Product,
+                    where: {
+                        isPublic: true,
+                        status: 1
+                    },
+                    through: { attributes: [] }
+                }
+            ]
         });
+        if (!Breadcategory) {
+            var BreadcategoryProducts = {
+                message: new Error("Cuban Bread & Sandwiches category products not found")
+            };
+        }else {
+            // Convert the category and its products to JSON
+            var BreadcategoryProducts = Breadcategory.Products;
+        }
 
         // Define productSalesArray at a higher scope to ensure availability
         let productSalesArray = [];
@@ -201,7 +223,7 @@ async function getHomeData(req, res) {
             result: {
                 banners: banners,
                 categories: categories,
-                latestProducts: latestProducts,
+                BreadcategoryProducts: BreadcategoryProducts,
                 Bestsellers: productSalesArray
             }
         });
