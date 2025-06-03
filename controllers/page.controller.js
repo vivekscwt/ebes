@@ -153,68 +153,61 @@ async function getHomeData(req, res) {
         // Define productSalesArray at a higher scope to ensure availability
         let productSalesArray = [];
 
-        // Best-selling Products
         try {
-            // Fetch all orders from the order_products table
-            const orders = await models.Order_Product.findAll({
-                where: { payment_status: 'success' },
-                attributes: ['order_details'], // Fetch only the order_details column
+        const orders = await models.Order_Product.findAll({
+            where: { payment_status: 'success' },
+            attributes: ['order_details'],
+            raw: true,
+        });
+
+        const productSales = new Map();
+
+        for (const order of orders) {
+            const orderDetails = JSON.parse(order.order_details);
+
+            for (const product of orderDetails) {
+            const productId = product.id;
+            const quantity = product.productQuantity;
+
+            const productExists = await models.Product.findOne({
+                where: { id: productId, isPublic: true, status: 1 },
                 raw: true,
             });
 
-            // Initialize a Map to store product IDs and their total quantities
-            const productSales = new Map();
+            if (productExists) {
+                productSales.set(productId, (productSales.get(productId) || 0) + quantity);
+            }
+            }
+        }
 
-            // Process each order
-            orders.forEach((order) => {
-                const orderDetails = JSON.parse(order.order_details); // Parse the JSON array
+        const productSalesArrayRaw = Array.from(productSales, ([productId, productQuantity]) => ({
+            productId,
+            productQuantity,
+        }));
 
-                // Iterate through each product in the order
-                orderDetails.forEach((product) => {
-                    const productId = product.id;
-                    const quantity = product.productQuantity;
+        productSalesArrayRaw.sort((a, b) => b.productQuantity - a.productQuantity);
 
-                    // Update the total quantity for the product ID
-                    productSales.set(productId, (productSales.get(productId) || 0) + quantity);
-                });
+        const bestSellingProductIds = productSalesArrayRaw.map(item => item.productId);
+
+        if (bestSellingProductIds.length > 0) {
+            const bestSellingProducts = await models.Product.findAll({
+            where: { id: bestSellingProductIds },
+            raw: true,
             });
 
-            // Convert the Map to an array of { productId, productQuantity } objects
-            const productSalesArrayRaw = Array.from(productSales, ([productId, productQuantity]) => ({
-                productId,
-                productQuantity,
-            }));
-            
+            productSalesArray = bestSellingProducts.map(product => {
+            const productQuantity = productSales.get(product.id) || 0;
+            return { ...product, productQuantity };
+            });
 
-            // Sort the array by productQuantity in descending order
-            productSalesArrayRaw.sort((a, b) => b.productQuantity - a.productQuantity);
-
-            // Extract only product IDs
-            const bestSellingProductIds = productSalesArrayRaw.map(item => item.productId);
-
-            if (bestSellingProductIds.length > 0) {
-                // Fetch product details for best-selling products
-                const bestSellingProducts = await models.Product.findAll({
-                    where: { id: bestSellingProductIds },
-                    raw: true
-                });
-
-                // Merge product details with productQuantity
-                productSalesArray = bestSellingProducts.map(product => {
-                    const productQuantity = productSales.get(product.id) || 0;
-                    return { ...product, productQuantity };
-                });
-
-                // Sort again just in case (to ensure proper order after merging)
-                productSalesArray.sort((a, b) => b.productQuantity - a.productQuantity);
-
-                // Keep only the top 4 best-selling products
-                productSalesArray = productSalesArray.slice(0, 4);
-            }
+            productSalesArray.sort((a, b) => b.productQuantity - a.productQuantity);
+            productSalesArray = productSalesArray.slice(0, 4);
+        }
 
         } catch (error) {
-            console.error("Error fetching best-selling products:", error.message);
+        console.error("Error fetching best-selling products:", error.message);
         }
+
 
         // Send success response with retrieved data
         res.status(200).json({
