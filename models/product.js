@@ -15,10 +15,19 @@ module.exports = (sequelize, DataTypes) => {
       Product.belongsTo(models.User);
       Product.belongsToMany(models.ProductCategory, { through: 'ProductCategoryMap', foreignKey: 'productId'});
       Product.hasMany(models.ProductCategoryMap, { foreignKey: 'productId' });
+      // association for variations
+      Product.hasMany(models.ProductVariation, {
+        foreignKey: 'parentProductId',
+        as: 'variations'
+      });
     }
   }
   Product.init({
     title: DataTypes.STRING,
+    type: {
+      type: DataTypes.ENUM('simple', 'variable'),
+      defaultValue: 'simple'
+    },
     excerpt: DataTypes.TEXT,
     content: DataTypes.TEXT,
     productImage: DataTypes.STRING,

@@ -12,6 +12,9 @@ module.exports = {
       categoryName: {
         type: Sequelize.STRING
       },
+      AddOns: {
+        type: Sequelize.STRING
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
@@ -19,6 +22,9 @@ module.exports = {
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
+      },
+      categoryImage: {
+        type: Sequelize.STRING
       }
     });
   },

@@ -8,6 +8,7 @@ const router = express.Router();
 router.post("/", checkAdminMiddleware.checkAdmin, productController.save);
 router.get("/", productController.index);
 router.get("/:id", productController.show);
+router.get("/search/:keyword", productController.searchProduct);
 router.patch("/:id", checkAdminMiddleware.checkAdmin, productController.update);
 router.delete("/:id", checkAdminMiddleware.checkAdmin, productController.destroy);
 
