@@ -407,7 +407,7 @@ function searchProduct(req, res) {
             res.status(200).json({
                 success: true,
                 message: results.length > 0
-                    ? "Products found successfully."
+                    ? "Products found successfully. Total products: " + results.length
                     : "No products found matching your search.",
                 result: transformedResults
             });
@@ -472,7 +472,7 @@ async function index(req, res) {
 
         res.status(200).json({
             success: true,
-            message: "Products fetched successfully.",
+            message: "Products fetched successfully. Total products: " + responseData.length,
             result: responseData
         });
 
