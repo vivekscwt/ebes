@@ -503,15 +503,19 @@ const usersOverMonth = async (req, res) => {
   try {
     const usersPerMonth = await models.User.findAll({
       attributes: [
-        [Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"), "%b"), "month"], 
-        [Sequelize.fn("COUNT", Sequelize.col("id")), "user_count"] 
+        [Sequelize.fn("MONTH", Sequelize.col("createdAt")), "month_number"],
+        [Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"), "%b"), "month"],
+        [Sequelize.fn("COUNT", Sequelize.col("id")), "user_count"]
       ],
       where: Sequelize.where(
         Sequelize.fn("YEAR", Sequelize.col("createdAt")),
-        Sequelize.fn("YEAR", Sequelize.fn("NOW")) 
+        Sequelize.fn("YEAR", Sequelize.fn("NOW"))
       ),
-      group: [Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"), "%b")],
-      order: [[Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"), "%m"), "ASC"]],
+      group: [
+        Sequelize.fn("MONTH", Sequelize.col("createdAt")),
+        Sequelize.fn("DATE_FORMAT", Sequelize.col("createdAt"), "%b")
+      ],
+      order: [[Sequelize.fn("MONTH", Sequelize.col("createdAt")), "ASC"]],
       raw: true
     });
 
@@ -520,33 +524,26 @@ const usersOverMonth = async (req, res) => {
     const userDataMap = Object.fromEntries(usersPerMonth.map(entry => [entry.month, entry.user_count]));
 
     const labels = allMonths;
-    const data = allMonths.map(month => userDataMap[month] || 0)
+    const data = allMonths.map(month => userDataMap[month] || 0);
 
     return res.status(200).json({
       success: true,
       result: {
         monthly_registered_users: data,
-        monthly_sales: [
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0
-      ]
+        monthly_sales: Array(12).fill(0) // Placeholder for sales data
       },
-      message: "No of users per month fetched successfully.",
+      message: "No of users per month fetched successfully."
     });
   } catch (error) {
     console.error("Error fetching user count per month:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching user count per month.",
+      error: error.message
+    });
   }
-}
+};
+
 
 const forgotPassword = async (req, res) => {
   const { email, user_type } = req.body;
