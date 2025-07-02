@@ -679,7 +679,7 @@ exports.updateOrderStatus = async (req, res, next) => {
         // Fetch transaction/payment info from order_histories
         const orderHistory = await models.Order_History.findOne({ where: { order_id: orderId } });
         if (!orderHistory) {
-          return res.status(404).json({ success: false, message: "Order history not found." });
+          return res.status(404).json({ success: false, message: "Order history not found or payment is pending for this order." });
         }
 
         // Create notification message based on status
