@@ -475,7 +475,7 @@ const allCount = async (req, res) => {
         payment_status: 'success'
       }
     });
-
+    
     return res.status(200).json({
       success: true,
       result: {
@@ -484,7 +484,7 @@ const allCount = async (req, res) => {
         guestuserscount: guestuserscount,
         totalProducts: totalProducts,
         totalOrders: totalOrders?totalOrders:0,
-        totalSales: totalSales?totalOrders:0
+        totalSales: totalSales?totalSales:0
       },
       message: "No of users fetched successfully.",
     });
