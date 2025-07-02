@@ -25,6 +25,7 @@ module.exports = (sequelize, DataTypes) => {
     total_amount: DataTypes.DECIMAL,
     payment_status: DataTypes.STRING,
     order_details: DataTypes.TEXT,
+    extra_notes: DataTypes.TEXT,
     userId: DataTypes.INTEGER,
     order_pickup_time: DataTypes.STRING,
     delivery_status: { type: DataTypes.STRING, allowNull: true }

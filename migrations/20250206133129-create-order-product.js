@@ -30,6 +30,9 @@ module.exports = {
       order_details: {
         type: Sequelize.TEXT
       },
+      extra_notes: {
+        type: Sequelize.TEXT
+      },
       userId: {
         type: Sequelize.INTEGER
       },

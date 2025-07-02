@@ -186,6 +186,7 @@ function invoice(billingData) {
             }).join('')}
           </tbody>
         </table>
+        <p><strong>Additional Notes:</strong> ${billingData.extraNotes}</p>
       </td>
     </tr>
 
@@ -213,7 +214,7 @@ function invoice(billingData) {
 }
 
 exports.createdOrder = async (req, res, next) => {
-  const { amount, product_details, firstName, lastName, email, phone, order_pickup_time, user_id } = req.body;
+  const { amount, product_details, firstName, lastName, email, phone, order_pickup_time, user_id, extra_notes } = req.body;
 
   try {
     // Validate product_details
@@ -276,6 +277,7 @@ exports.createdOrder = async (req, res, next) => {
       payment_status: 'pending',
       delivery_status: 'pending',
       order_details: orderDetails,
+      extra_notes: extra_notes,
       userId: newUserId,
       order_pickup_time,
     };
@@ -306,7 +308,7 @@ exports.handlePayment = async (req, res, next) => {
   try {
     const product_order = await models.Order_Product.findOne({
       where: { order_id: order_id },
-      attributes: ["customerName", "email", "phone", "order_details"],
+      attributes: ["customerName", "email", "phone", "order_details", "extra_notes"],
       raw: true,
     });
     if (!product_order) {
@@ -367,6 +369,7 @@ exports.handlePayment = async (req, res, next) => {
         authCode: transactionResponse.getAuthCode(),
         transactionId: transactionId,
         orderDetails: product_order.order_details,
+        extra_notes: product_order.extra_notes,
         order_id: order_id
       };
 
