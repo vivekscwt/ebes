@@ -174,13 +174,13 @@ function invoice(billingData) {
           </thead>
           <tbody>
             ${orderDetails.map(item => {
-              let unitPrice = item.priceOffer !== null ? item.priceOffer : item.priceRegular;
+              let unitPrice = item.finalPrice !== null ? item.finalPrice : item.priceRegular;
               return `
                 <tr>
                   <td>${item.title}</td>
-                  <td>$${unitPrice.toFixed(2)}</td>
+                  <td>$${unitPrice}</td>
                   <td>${item.productQuantity}</td>
-                  <td>$${(unitPrice * item.productQuantity).toFixed(2)}</td>
+                  <td>$${item.totalPrice}</td>
                 </tr>
               `;
             }).join('')}
@@ -873,8 +873,8 @@ function orderStatusMailbody(billingData) {
           </thead>
           <tbody>
             ${orderDetails.map(item => {
-              const unitPrice = item.priceOffer !== null && item.priceOffer !== undefined
-                ? parseFloat(item.priceOffer)
+              const unitPrice = item.finalPrice !== null && item.finalPrice !== undefined
+                ? parseFloat(item.finalPrice)
                 : parseFloat(item.priceRegular);
 
               const quantity = parseInt(item.productQuantity);
@@ -882,10 +882,15 @@ function orderStatusMailbody(billingData) {
 
               return `
                 <tr>
-                  <td>${item.title}</td>
-                  <td>$${unitPrice.toFixed(2)}</td>
+                  <td>
+                    ${item.title}
+                    ${item.type === "variable" && item.variation ? `<br><small><strong>Variation:</strong> ${item.variation}</small>` : ""}
+                    ${item.selectedMilk ? `<br><small><strong>Milk:</strong> ${item.selectedMilk}</small>` : ""}
+                    ${item.whipped_cream ? `<br><small><strong>Whipped Cream:</strong> ${item.whipped_cream}</small>` : ""}
+                  </td>
+                  <td>$${unitPrice}</td>
                   <td>${quantity}</td>
-                  <td>$${total.toFixed(2)}</td>
+                  <td>$${item.totalPrice}</td>
                 </tr>
               `;
             }).join('')}
