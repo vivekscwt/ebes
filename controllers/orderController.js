@@ -188,9 +188,9 @@ function invoice(billingData) {
                 </tr>
               `;
             }).join('')}
+            <tr><td colspan="4"><p><strong>Additional Notes:</strong> ${billingData.extra_notes}</p></td></tr>
           </tbody>
         </table>
-        <p><strong>Additional Notes:</strong> ${billingData.extra_notes}</p>
       </td>
     </tr>
 
@@ -899,8 +899,8 @@ function orderStatusMailbody(billingData) {
                 </tr>
               `;
             }).join('')}
+            <tr><td colspan="4"><p><strong>Additional Notes:</strong> ${billingData.extra_notes}</p></td></tr>
           </tbody>
-          <p><strong>Additional Notes:</strong> ${billingData.extra_notes}</p>
         </table>
       </td>
     </tr>
