@@ -177,7 +177,11 @@ function invoice(billingData) {
               let unitPrice = item.finalPrice !== null ? item.finalPrice : item.priceRegular;
               return `
                 <tr>
-                  <td>${item.title}</td>
+                  <td>${item.title}
+                    ${item.type === "variable" && item.variation ? `<br><small><strong>Variation:</strong> ${item.variation}</small>` : ""}
+                    ${item.selectedMilk ? `<br><small><strong>Milk:</strong> ${item.selectedMilk}</small>` : ""}
+                    ${item.whipped_cream ? `<br><small><strong>Whipped Cream:</strong> ${item.whipped_cream}</small>` : ""}
+                  </td>
                   <td>$${unitPrice}</td>
                   <td>${item.productQuantity}</td>
                   <td>$${item.totalPrice}</td>
@@ -186,7 +190,7 @@ function invoice(billingData) {
             }).join('')}
           </tbody>
         </table>
-        <p><strong>Additional Notes:</strong> ${billingData.extraNotes}</p>
+        <p><strong>Additional Notes:</strong> ${billingData.extra_notes}</p>
       </td>
     </tr>
 
@@ -743,7 +747,8 @@ exports.updateOrderStatus = async (req, res, next) => {
           paymentMethod: orderHistory.paymentMethod,
           cardNumber: orderHistory.cardNumber,
           total: orderProduct.total_amount,
-          delivery_status: orderProduct.delivery_status
+          delivery_status: orderProduct.delivery_status,
+          extra_notes: orderProduct.extra_notes
         };
 
         // Generate email body
@@ -895,6 +900,7 @@ function orderStatusMailbody(billingData) {
               `;
             }).join('')}
           </tbody>
+          <p><strong>Additional Notes:</strong> ${billingData.extra_notes}</p>
         </table>
       </td>
     </tr>
