@@ -498,8 +498,8 @@ async function update(req, res) {
         title: req.body.title,
         excerpt: req.body.excerpt,
         content: req.body.content,
-        priceRegular: req.body.priceRegular,
-        priceOffer: req.body.priceOffer,
+        priceRegular: req.body.priceRegular || null,
+        priceOffer: req.body.priceOffer || null,
         isPublic: req.body.isPublic,
         productImage: req.body.productImage,
         type: req.body.type, // Important: include this
