@@ -181,6 +181,8 @@ function invoice(billingData) {
                     ${item.type === "variable" && item.variation ? `<br><small><strong>Variation:</strong> ${item.variation}</small>` : ""}
                     ${item.selectedMilk ? `<br><small><strong>Milk:</strong> ${item.selectedMilk}</small>` : ""}
                     ${item.whipped_cream ? `<br><small><strong>Whipped Cream:</strong> ${item.whipped_cream}</small>` : ""}
+                    ${item.extraNote ? `<br><small><strong>ExtraNote:</strong> ${item.extraNote}</small>` : ""}
+                    ${item.selectedProductAddOn ? `<br><small><strong>Selected AddOn:</strong> ${item.selectedProductAddOn}</small>` : ""}
                   </td>
                   <td>$${unitPrice}</td>
                   <td>${item.productQuantity}</td>
@@ -892,6 +894,8 @@ function orderStatusMailbody(billingData) {
                     ${item.type === "variable" && item.variation ? `<br><small><strong>Variation:</strong> ${item.variation}</small>` : ""}
                     ${item.selectedMilk ? `<br><small><strong>Milk:</strong> ${item.selectedMilk}</small>` : ""}
                     ${item.whipped_cream ? `<br><small><strong>Whipped Cream:</strong> ${item.whipped_cream}</small>` : ""}
+                    ${item.extraNote ? `<br><small><strong>ExtraNote:</strong> ${item.extraNote}</small>` : ""}
+                    ${item.selectedProductAddOn ? `<br><small><strong>Selected AddOn:</strong> ${item.selectedProductAddOn}</small>` : ""}
                   </td>
                   <td>$${unitPrice}</td>
                   <td>${quantity}</td>

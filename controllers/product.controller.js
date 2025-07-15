@@ -109,6 +109,7 @@ async function save(req, res) {
         type: req.body.type, // 'simple' or 'variable'
         excerpt: req.body.excerpt,
         content: req.body.content,
+        ProductAddOns: JSON.stringify(req.body.ProductAddOns) || null,
         productImage: req.body.productImage || 'default-image.png',
         priceRegular: req.body.priceRegular || null,
         priceOffer: req.body.priceOffer || null,
@@ -126,6 +127,7 @@ async function save(req, res) {
         },
         excerpt: { type: "string", optional: true, max: "500" },
         content: { type: "string", optional: false },
+        ProductAddOns: { type: "array", optional: true },
         productImage: { type: "string", optional: true },
         priceRegular: {
             type: "number",
@@ -287,6 +289,7 @@ async function save(req, res) {
             message: "Product created successfully",
             result: {
                 ...result.toJSON(),
+                ProductAddOns: product.ProductAddOns ? JSON.parse(product.ProductAddOns) : [],
                 variations: product.type === 'variable' ? req.body.variations : undefined
             },
         });
@@ -327,6 +330,11 @@ async function show(req, res) {
         let responseData = product.toJSON();
         responseData.User = responseData.Admin;
         delete responseData.Admin;
+
+        // Parse ProductAddOns
+        responseData.ProductAddOns = responseData.ProductAddOns
+            ? JSON.parse(responseData.ProductAddOns)
+            : [];
 
         // Parse AddOns for each product category
         if (responseData.ProductCategories && responseData.ProductCategories.length > 0) {
@@ -442,7 +450,7 @@ async function index(req, res) {
             .filter(product => product.type === 'variable')
             .map(product => product.id);
 
-        const variations = variableProductIds.length > 0 
+        const variations = variableProductIds.length > 0
             ? await models.ProductVariation.findAll({
                 where: { parentProductId: variableProductIds },
                 attributes: ['id', 'parentProductId', 'variationName', 'price']
@@ -461,7 +469,12 @@ async function index(req, res) {
         // Prepare response data
         const responseData = products.map(product => {
             const productJson = product.toJSON();
-            
+
+            // Parse ProductAddOns
+            productJson.ProductAddOns = productJson.ProductAddOns
+                ? JSON.parse(productJson.ProductAddOns)
+                : [];
+
             // Add variations if product is variable
             if (product.type === 'variable') {
                 productJson.variations = variationsMap[product.id] || [];
@@ -494,15 +507,44 @@ async function update(req, res) {
     const id = req.params.id;
     const userId = req.userData.userId;
 
+    // Parse ProductAddOns safely (can come as string or array)
+    let productAddOns = req.body.ProductAddOns;
+    if (typeof productAddOns === 'string') {
+        try {
+            productAddOns = JSON.parse(productAddOns);
+        } catch (e) {
+            return res.status(400).json({
+                message: "Validation failed",
+                errors: [{
+                    field: "ProductAddOns",
+                    message: "Invalid JSON in ProductAddOns"
+                }]
+            });
+        }
+    }
+
+    if (!Array.isArray(productAddOns)) {
+        return res.status(400).json({
+            message: "Validation failed",
+            errors: [{
+                field: "ProductAddOns",
+                type: "array",
+                message: "ProductAddOns must be an array.",
+                actual: productAddOns
+            }]
+        });
+    }
+
     const updatedProduct = {
         title: req.body.title,
         excerpt: req.body.excerpt,
         content: req.body.content,
+        ProductAddOns: productAddOns.length ? JSON.stringify(productAddOns) : null,
         priceRegular: req.body.priceRegular || null,
         priceOffer: req.body.priceOffer || null,
         isPublic: req.body.isPublic,
         productImage: req.body.productImage,
-        type: req.body.type, // Important: include this
+        type: req.body.type, // Important: include this,
     };
 
     // Basic validation
@@ -510,6 +552,7 @@ async function update(req, res) {
         title: { type: "string", optional: false, max: "200" },
         excerpt: { type: "string", optional: true, max: "500" },
         content: { type: "string", optional: false },
+        ProductAddOns: { type: "array", optional: true },
         priceRegular: {
             type: "number",
             optional: true,
@@ -554,11 +597,15 @@ async function update(req, res) {
 
     const v = new Validator({
         messages: {
-            priceOfferGreater: "Price offer ({actual}) must be less than price regular."
+            priceOfferGreater: "Price offer ({actual}) must be less than price regular.",
+            ProductAddOns: "ProductAddOns must be an array."
         }
     });
 
-    const validationResponse = v.validate(updatedProduct, schema);
+    const validationResponse = v.validate({
+        ...updatedProduct,
+        ProductAddOns: productAddOns
+    }, schema);
 
     if (validationResponse !== true) {
         return res.status(400).json({
@@ -650,7 +697,11 @@ async function update(req, res) {
         return res.status(200).json({
             success: true,
             message: "Product updated successfully",
-            result: updatedProduct
+            result: {
+                ...updatedProduct,
+                ProductAddOns: productAddOns,
+                variations: updatedProduct.type === 'variable' ? req.body.variations : undefined
+            }
         });
 
     } catch (error) {
