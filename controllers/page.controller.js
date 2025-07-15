@@ -150,6 +150,28 @@ async function getHomeData(req, res) {
             var BreadcategoryProducts = Breadcategory.Products;
         }
 
+        const Kidscategory = await models.ProductCategory.findOne({
+            where: { id: 12 }, // Assuming 12 is the ID for "Kids Menu"
+            include: [
+                {
+                    model: models.Product,
+                    where: {
+                        isPublic: true,
+                        status: 1
+                    },
+                    through: { attributes: [] }
+                }
+            ]
+        });
+        if (!Kidscategory) {
+            var KidscategoryProducts = {
+                message: new Error("Kids Menu category products not found")
+            };
+        }else {
+            // Convert the category and its products to JSON
+            var KidscategoryProducts = Kidscategory.Products;
+        }
+
         // Define productSalesArray at a higher scope to ensure availability
         let productSalesArray = [];
 
@@ -217,6 +239,7 @@ async function getHomeData(req, res) {
                 banners: banners,
                 categories: categories,
                 BreadcategoryProducts: BreadcategoryProducts,
+                KidscategoryProducts: KidscategoryProducts,
                 Bestsellers: productSalesArray
             }
         });
