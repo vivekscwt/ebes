@@ -10,7 +10,8 @@ const { QueryTypes } = require('sequelize');
 const { sequelize } = require('../models');  // Ensure the path is correct
 const { transporter } = require("../config/nodemailer");
 const bcryptjs = require('bcryptjs');
-
+const { SquareClient, SquareEnvironment } = require("square");
+const { randomUUID } = require("crypto");
 
 
 // exports.getAllOrders = (req, res) => {
@@ -303,86 +304,264 @@ exports.createdOrder = async (req, res, next) => {
   }
 };
 
-exports.handlePayment = async (req, res, next) => {
+// exports.handlePayment = async (req, res, next) => {
 
+//   res.setHeader("Content-Type", "application/json");
+//   res.setHeader("Access-Control-Allow-Headers", "x-payment-api-key");
+//   const { order_id, amount, productOriginalPrice, firstName, lastName, email, customerProfileId, customerPaymentProfileId, paymentNonce } = req.body;
+//   const { user_id } = req.body;
+//   let { useSavedCard } = req.body;
+
+//   try {
+//     const product_order = await models.Order_Product.findOne({
+//       where: { order_id: order_id },
+//       attributes: ["customerName", "email", "phone", "order_details", "extra_notes"],
+//       raw: true,
+//     });
+//     if (!product_order) {
+//       return next(new NotFoundError("Product order not found"));
+//     }
+
+//     const customerData = {
+//       Name: product_order.customerName,
+//       email: product_order.email,
+//       phone: product_order.phone
+//     };
+
+//     // Generate a token
+//     const token = generateToken();
+//     console.log("createdtoken", token);
+
+//     if (!token) {
+//       return next(new UnhandledError("Token generation failed"));
+//     }
+
+//     // Process the payment
+//     const transactionResponse = await createTransactionv2(
+//       amount,
+//       useSavedCard,
+//       paymentNonce,
+//       customerProfileId,
+//       customerPaymentProfileId,
+//       customerData,
+//       "Purchase products from EBES",
+//       token
+//     );
+
+//     if (String(transactionResponse.getResponseCode()) === "1") {
+      
+//       const transactionId = transactionResponse.getTransId();
+
+//       // Insert the token into the database
+//       const insertedToken = await models.token.create({
+//         token,
+//         paymentStatus: "success",
+//         transactionId: transactionId,
+//       });
+//       //console.log("insertedToken", insertedToken);
+//       if (!insertedToken) {
+//         return next(new UnhandledError("Token insertion failed"));
+//       }
+
+
+//       // Prepare billing data
+//       var billingData = {
+//         dateOfPurchase: new Date().toISOString().split('T')[0],
+//         customerName: customerData.Name,
+//         email: customerData.email,
+//         total: amount,
+//         unitPrice: amount,
+//         paymentMethod: transactionResponse.accountType,
+//         cardNumber: `**** **** **** ${transactionResponse.accountNumber.slice(4)}`,
+//         authCode: transactionResponse.getAuthCode(),
+//         transactionId: transactionId,
+//         orderDetails: product_order.order_details,
+//         extra_notes: product_order.extra_notes,
+//         order_id: order_id
+//       };
+
+//       // Insert billing data into the database
+//       await models.Order_History.create({
+//         order_id: order_id,
+//         transactionId: transactionId,
+//         customerName: billingData.customerName,
+//         email: billingData.email,
+//         total: billingData.total,
+//         paymentMethod: billingData.paymentMethod,
+//         cardNumber: billingData.cardNumber,
+//         purchaseDate: billingData.dateOfPurchase,
+//         tokenId: insertedToken.id,
+//         userId: user_id,
+//       });
+
+//       // Update Order status
+//       await models.Order_Product.update(
+//         { delivery_status: 'pending', payment_status: 'success' },
+//         { where: { order_id: order_id } }
+//       );
+
+//       // Clear user cart after successful payment
+//       if (user_id) {
+//         await models.User_cart.destroy({ where: { user_id: user_id } });
+//       }
+
+//       // Set Mail Body
+//       const mailBody = invoice(billingData);
+
+//       if (!mailBody) {
+//         throw new Error("MailBody must be provided");
+//       }
+
+//       // Send invoice to the user's email
+//       const mailOptions = {
+//         from: `"EBES" <${process.env.MAIL_USER}>`,
+//         to: customerData.email,
+//         subject: "EBE New Order Invoice",
+//         html: mailBody,
+//       };
+
+//       try {
+//         await transporter.sendMail(mailOptions);
+//         console.log("New order Invoice sent");
+//         return res.status(200).json({
+//           success: true,
+//           message: "Payment successful",
+//           result: { transactionId, token }
+//         });
+//       } catch (error) {
+//         console.error("Error sending invoice:", error);
+//         return res.status(500).json({
+//           success: false,
+//           message: "Invoice email failed",
+//           error: error.message,
+//         });
+//       }
+      
+//     } else {
+//         console.log("Payment failed:", transactionResponse);
+    
+//         // Extract error message properly
+//         let errorMessage = "Payment failed.";
+//         if (transactionResponse.getErrors() && transactionResponse.getErrors().getError()) {
+//             const errorArray = transactionResponse.getErrors().getError();
+//             if (errorArray.length > 0) {
+//                 errorMessage = errorArray[0].getErrorText();
+//             }
+//         }
+    
+//         // **Update Order_Product payment_status to 'failed'**
+//         await models.Order_Product.update(
+//             { payment_status: 'failed' },
+//             { where: { order_id: order_id } }
+//         );
+    
+//         return res.status(400).json({
+//             success: false,
+//             message: "Payment failed",
+//             error: errorMessage
+//         });
+//     }  
+//   } catch (error) {
+//     console.error("Payment processing error:", error);
+
+//     // Ensure payment_status is updated to 'failed' even in case of errors
+//     try {
+//         await models.Order_Product.update(
+//             { payment_status: 'failed' },
+//             { where: { order_id: order_id } }
+//         );
+//         return res.status(500).json({
+//           success: false,
+//           message: "Payment processing error",
+//           error: error.message || "An unexpected error occurred"
+//         });
+//     } catch (dbError) {
+//         console.error("Failed to update payment_status to 'failed':", dbError);
+//     }
+
+//   }
+// };
+
+
+const client = new SquareClient({
+    environment: SquareEnvironment.Sandbox,
+    token: process.env.SQUARE_ACCESS_TOKEN,
+});
+
+function safeJson(obj) {
+  return JSON.parse(JSON.stringify(obj, (_, v) =>
+    typeof v === 'bigint' ? v.toString() : v
+  ));
+}
+
+exports.handlePayment = async (req, res, next) => {
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Access-Control-Allow-Headers", "x-payment-api-key");
-  const { order_id, amount, productOriginalPrice, firstName, lastName, email, customerProfileId, customerPaymentProfileId, paymentNonce } = req.body;
-  const { user_id } = req.body;
-  let { useSavedCard } = req.body;
 
+  const { order_id, amount, firstName, lastName, email, user_id, paymentNonce } = req.body;
+  console.log("handlePayment", req.body);
+  
   try {
     const product_order = await models.Order_Product.findOne({
-      where: { order_id: order_id },
+      where: { order_id },
       attributes: ["customerName", "email", "phone", "order_details", "extra_notes"],
       raw: true,
     });
+
     if (!product_order) {
       return next(new NotFoundError("Product order not found"));
     }
 
     const customerData = {
-      Name: product_order.customerName,
+      name: product_order.customerName,
       email: product_order.email,
-      phone: product_order.phone
+      phone: product_order.phone,
     };
 
-    // Generate a token
     const token = generateToken();
-    console.log("createdtoken", token);
+    if (!token) return next(new UnhandledError("Token generation failed"));
 
-    if (!token) {
-      return next(new UnhandledError("Token generation failed"));
-    }
+    const response = await client.payments.create({
+      sourceId: paymentNonce,              
+      idempotencyKey: randomUUID(),   
+      amountMoney: {
+        amount: BigInt(amount),           
+        currency: "USD",
+      },
+      locationId: process.env.SQUARE_LOCATION_ID,
+      note: "Purchase products from EBES",
+    });
 
-    // Process the payment
-    const transactionResponse = await createTransactionv2(
-      amount,
-      useSavedCard,
-      paymentNonce,
-      customerProfileId,
-      customerPaymentProfileId,
-      customerData,
-      "Purchase products from EBES",
-      token
-    );
+    const payment = response.payment;
+    console.log("paymentsss",payment);
 
-    if (String(transactionResponse.getResponseCode()) === "1") {
-      
-      const transactionId = transactionResponse.getTransId();
+    if (payment && payment.status === "COMPLETED") {
+      const transactionId = payment.id;
 
-      // Insert the token into the database
       const insertedToken = await models.token.create({
         token,
         paymentStatus: "success",
-        transactionId: transactionId,
+        transactionId,
       });
-      //console.log("insertedToken", insertedToken);
-      if (!insertedToken) {
-        return next(new UnhandledError("Token insertion failed"));
-      }
 
-
-      // Prepare billing data
-      var billingData = {
-        dateOfPurchase: new Date().toISOString().split('T')[0],
-        customerName: customerData.Name,
+      const billingData = {
+        dateOfPurchase: new Date().toISOString().split("T")[0],
+        customerName: customerData.name,
         email: customerData.email,
         total: amount,
         unitPrice: amount,
-        paymentMethod: transactionResponse.accountType,
-        cardNumber: `**** **** **** ${transactionResponse.accountNumber.slice(4)}`,
-        authCode: transactionResponse.getAuthCode(),
-        transactionId: transactionId,
+        paymentMethod: payment.sourceType,
+        cardNumber: `**** **** **** ${payment.cardDetails?.card?.last4}`,
+        authCode: payment.cardDetails?.authResultCode || "",
+        transactionId,
         orderDetails: product_order.order_details,
         extra_notes: product_order.extra_notes,
-        order_id: order_id
+        order_id,
       };
 
-      // Insert billing data into the database
       await models.Order_History.create({
-        order_id: order_id,
-        transactionId: transactionId,
+        order_id,
+        transactionId,
         customerName: billingData.customerName,
         email: billingData.email,
         total: billingData.total,
@@ -393,93 +572,54 @@ exports.handlePayment = async (req, res, next) => {
         userId: user_id,
       });
 
-      // Update Order status
       await models.Order_Product.update(
-        { delivery_status: 'pending', payment_status: 'success' },
-        { where: { order_id: order_id } }
+        { delivery_status: "pending", payment_status: "success" },
+        { where: { order_id } }
       );
 
-      // Clear user cart after successful payment
-      if (user_id) {
-        await models.User_cart.destroy({ where: { user_id: user_id } });
-      }
+      if (user_id) await models.User_cart.destroy({ where: { user_id } });
 
-      // Set Mail Body
       const mailBody = invoice(billingData);
-
-      if (!mailBody) {
-        throw new Error("MailBody must be provided");
-      }
-
-      // Send invoice to the user's email
-      const mailOptions = {
+      await transporter.sendMail({
         from: `"EBES" <${process.env.MAIL_USER}>`,
         to: customerData.email,
-        subject: "EBE New Order Invoice",
+        subject: "EBES New Order Invoice",
         html: mailBody,
-      };
+      });
 
-      try {
-        await transporter.sendMail(mailOptions);
-        console.log("New order Invoice sent");
-        return res.status(200).json({
-          success: true,
-          message: "Payment successful",
-          result: { transactionId, token }
-        });
-      } catch (error) {
-        console.error("Error sending invoice:", error);
-        return res.status(500).json({
-          success: false,
-          message: "Invoice email failed",
-          error: error.message,
-        });
-      }
-      
+      return res.status(200).json({
+        success: true,
+        message: "Payment successful",
+        result: { transactionId, token },
+      });
     } else {
-        console.log("Payment failed:", transactionResponse);
-    
-        // Extract error message properly
-        let errorMessage = "Payment failed.";
-        if (transactionResponse.getErrors() && transactionResponse.getErrors().getError()) {
-            const errorArray = transactionResponse.getErrors().getError();
-            if (errorArray.length > 0) {
-                errorMessage = errorArray[0].getErrorText();
-            }
-        }
-    
-        // **Update Order_Product payment_status to 'failed'**
-        await models.Order_Product.update(
-            { payment_status: 'failed' },
-            { where: { order_id: order_id } }
-        );
-    
-        return res.status(400).json({
-            success: false,
-            message: "Payment failed",
-            error: errorMessage
-        });
-    }  
-  } catch (error) {
-    console.error("Payment processing error:", error);
+      await models.Order_Product.update(
+        { payment_status: "failed" },
+        { where: { order_id } }
+      );
 
-    // Ensure payment_status is updated to 'failed' even in case of errors
-    try {
-        await models.Order_Product.update(
-            { payment_status: 'failed' },
-            { where: { order_id: order_id } }
-        );
-        return res.status(500).json({
-          success: false,
-          message: "Payment processing error",
-          error: error.message || "An unexpected error occurred"
-        });
-    } catch (dbError) {
-        console.error("Failed to update payment_status to 'failed':", dbError);
+      return res.status(400).json({
+        success: false,
+        message: "Payment failed",
+        error: payment?.status || "Unknown error",
+      });
     }
+  } catch (error) {
+    console.error("Square Payment error:", error);
 
+    await models.Order_Product.update(
+      { payment_status: "failed" },
+      { where: { order_id } }
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Payment processing error",
+      error: error.body || error.message,
+    });
   }
 };
+
 
 
 exports.orderDetails = async (req, res, next) => {
