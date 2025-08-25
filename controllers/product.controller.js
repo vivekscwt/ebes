@@ -321,7 +321,7 @@ async function show(req, res) {
                 }
             ]
         });
-
+        
         if (!product) {
             return res.status(404).json({
                 success: false,
@@ -332,7 +332,7 @@ async function show(req, res) {
         let responseData = product.toJSON();
         responseData.User = responseData.Admin;
         delete responseData.Admin;
-
+        
         // Parse ProductAddOns
         responseData.ProductAddOns = responseData.ProductAddOns
             ? JSON.parse(responseData.ProductAddOns)

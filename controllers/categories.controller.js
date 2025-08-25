@@ -217,12 +217,21 @@ const categoryProductListing = async (req, res) => {
         }
       ]
     });
+    const productsListing = categories.length > 0 ? categories[0].Products : [];
+
+    for(const product of productsListing) { 
+      const variations = await models.ProductVariation.findAll({
+        where:{parentProductId: product.id},
+        attributes:['id','variationName','price']
+      })
+      product.dataValues.variations = variations;
+    }
+
     return res.status(200).json({
       success: true,
       message: "Category fetched successfully.",
       result: categories
     });
-
   } catch (error) {
     return res.status(500).json({
       success: false,

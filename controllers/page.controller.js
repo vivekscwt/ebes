@@ -149,6 +149,15 @@ async function getHomeData(req, res) {
             // Convert the category and its products to JSON
             var BreadcategoryProducts = Breadcategory.Products;
         }
+        for (const product of BreadcategoryProducts) {
+            if (product.type == 'variable') {
+                const variations = await models.ProductVariation.findAll({
+                    where: { parentProductId: product.id },
+                    attributes: ['id', 'variationName', 'price']
+                });
+                product.variations = variations;
+            }
+        }
 
         const Kidscategory = await models.ProductCategory.findOne({
             where: { id: 12 }, // Assuming 12 is the ID for "Kids Menu"
@@ -170,6 +179,15 @@ async function getHomeData(req, res) {
         }else {
             // Convert the category and its products to JSON
             var KidscategoryProducts = Kidscategory.Products;
+        }
+        for (const product of KidscategoryProducts) {
+            if (product.type == 'variable') {
+                const variations = await models.ProductVariation.findAll({
+                    where: { parentProductId: product.id },
+                    attributes: ['id', 'variationName', 'price']
+                });
+                product.variations = variations;
+            }
         }
 
         // Define productSalesArray at a higher scope to ensure availability
