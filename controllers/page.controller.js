@@ -224,6 +224,15 @@ async function getHomeData(req, res) {
 
             productSalesArray.sort((a, b) => b.productQuantity - a.productQuantity);
             productSalesArray = productSalesArray.slice(0, 4);
+            for (const product of productSalesArray) {
+                if (product.type == 'variable') {
+                    const variations = await models.ProductVariation.findAll({
+                        where: { parentProductId: product.id },
+                        attributes: ['id', 'variationName', 'price']
+                    });
+                    product.variations = variations;
+                }
+            }
         }
 
         } catch (error) {

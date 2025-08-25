@@ -110,6 +110,7 @@ async function save(req, res) {
         excerpt: req.body.excerpt,
         content: req.body.content,
         ProductAddOns: JSON.stringify(req.body.ProductAddOns) || null,
+        // ProductAddOns: req.body.ProductAddOns || null, 
         productImage: req.body.productImage || 'default-image.png',
         priceRegular: req.body.priceRegular || null,
         priceOffer: req.body.priceOffer || null,
@@ -128,6 +129,7 @@ async function save(req, res) {
         excerpt: { type: "string", optional: true, max: "500" },
         content: { type: "string", optional: false },
         ProductAddOns: { type: "array", optional: true },
+        // ProductAddOns: { type: "object", optional: true },
         productImage: { type: "string", optional: true },
         priceRegular: {
             type: "number",

@@ -42,6 +42,6 @@ const PORT = process.env.PORT || 3001;
 
 //User.sync({ alter: true })
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server is running on http://192.168.1.7:${PORT}`);
 });
