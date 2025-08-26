@@ -801,7 +801,6 @@ exports.updateOrderStatus = async (req, res, next) => {
                 message: "Invalid delivery status. Allowed values are: pending, processing, ready, completed.",
             });
         }
-
         // Update the delivery status in the database
         const result = await models.Order_Product.update(
             { delivery_status },
