@@ -783,7 +783,27 @@ exports.myOrders = async (req, res, next) => {
       });
   }
 };
-  
+  function parseOrderDetails(orderDetailsString) {
+  if (!orderDetailsString) return [];
+
+  let raw = orderDetailsString;
+
+  try {
+    // Remove outer quotes if present
+    if (raw.startsWith('"') && raw.endsWith('"')) {
+      raw = raw.slice(1, -1);
+    }
+
+    // Replace escaped quotes
+    raw = raw.replace(/\\"/g, '"');
+
+    return JSON.parse(raw);
+  } catch (err) {
+    console.error("Error parsing order details:", err);
+    return [];
+  }
+}
+
 
 /**
  * Updates the delivery status of an order.
@@ -868,15 +888,7 @@ exports.updateOrderStatus = async (req, res, next) => {
           });
         }
 
-        // Parse order details safely
-        let orderDetails = [];
-        try {
-          orderDetails = typeof orderProduct.order_details === "string"
-            ? JSON.parse(orderProduct.order_details)
-            : orderProduct.order_details;
-        } catch (error) {
-          console.error("Error parsing order details:", error);
-        }
+      let orderDetails = parseOrderDetails(orderProduct.order_details);
 
         // Build billing data
         const billingData = {
@@ -948,8 +960,137 @@ exports.updateOrderStatus = async (req, res, next) => {
     }
 };
 
+// function orderStatusMailbody(billingData) {
+//   let orderDetails = [];
+//   console.log("billingData", billingData);
+  
+//   // Ensure orderDetails is parsed if it's a string
+//   if (typeof billingData.orderDetails === "string") {
+//     try {
+//       orderDetails = JSON.parse(billingData.orderDetails);
+//     } catch (error) {
+//       console.error("Error parsing orderDetails:", error);
+//       orderDetails = []; // Default to empty array if parsing fails
+//     }
+//   } else if (Array.isArray(billingData.orderDetails)) {
+//     orderDetails = billingData.orderDetails;
+//   }
+
+//   console.log("orderDetails", orderDetails);
+  
+//   const maskCardNumber = (cardNumber) => {
+//     if (!cardNumber || cardNumber.length < 4) return 'xxxx';
+//     return cardNumber.replace(/.(?=.{4})/g, 'x');
+//   };
+
+//   return `<!DOCTYPE html>
+// <html>
+// <head>
+//   <meta charset="UTF-8">
+//   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+//   <title>Order Invoice</title>
+//   <style>
+//     table { width: 100%; border-collapse: collapse; }
+//     th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+//     th { background-color: #f4f4f4; }
+//   </style>
+// </head>
+// <body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
+//   <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: auto; border-collapse: collapse;">
+
+//     <!-- Header -->
+//     <tr>
+//       <td style="padding: 20px; text-align: left; background-color:#ffeb00;">
+//         <h3 style="color: #000;">Order Invoice</h3>
+//         <p style="margin: 5px 0;">Thank you for your order! Below is your invoice.</p>
+//       </td>
+//     </tr>
+
+//     <!-- Purchase Details -->
+//     <tr>
+//       <td style="padding: 20px; text-align: left;">
+//         <h3 style="color: #000;">Invoice Details</h3>
+//         <p style="margin: 5px 0;"><strong>Order ID:</strong> ${billingData.order_id}</p>
+//         <p style="margin: 5px 0;"><strong>Date of Purchase:</strong> ${billingData.dateOfPurchase}</p>
+//         <p style="margin: 5px 0;"><strong>Invoice Number:</strong> ${billingData.invoiceNumber}</p>
+//         <p style="margin: 5px 0;"><strong>Customer Name:</strong> ${billingData.customerName}</p>
+//         <p style="margin: 5px 0;"><strong>Email:</strong> ${billingData.email}</p>
+//         <p style="margin: 5px 0;"><strong>Order Status:</strong> ${billingData.delivery_status || "Pending"}</p>
+//       </td>
+//     </tr>
+
+//     <!-- Order Summary Table -->
+//     <tr>
+//       <td style="padding: 20px; text-align: left; background-color: #f4f4f4;">
+//         <h3 style="color: #000;">Order Summary</h3>
+//         <table>
+//           <thead>
+//             <tr>
+//               <th>Product</th>
+//               <th>Unit Price</th>
+//               <th>Quantity</th>
+//               <th>Total</th>
+//             </tr>
+//           </thead>
+//           <tbody>
+//             ${orderDetails.map(item => {
+//               const unitPrice = item.finalPrice !== null && item.finalPrice !== undefined
+//                 ? parseFloat(item.finalPrice)
+//                 : parseFloat(item.priceRegular);
+
+//               const quantity = parseInt(item.productQuantity);
+//               const total = unitPrice * quantity;
+
+//               return `
+//                 <tr>
+//                   <td>
+//                     ${item.title}
+//                     ${item.type === "variable" && item.variation ? `<br><small><strong>Variation:</strong> ${item.variation}</small>` : ""}
+//                     ${item.selectedMilk ? `<br><small><strong>Milk:</strong> ${item.selectedMilk}</small>` : ""}
+//                     ${item.whipped_cream ? `<br><small><strong>Whipped Cream:</strong> ${item.whipped_cream}</small>` : ""}
+//                     ${item.extraNote ? `<br><small><strong>ExtraNote:</strong> ${item.extraNote}</small>` : ""}
+//                     ${item.selectedProductAddOn ? `<br><small><strong>Selected AddOn:</strong> ${item.selectedProductAddOn}</small>` : ""}
+//                   </td>
+//                   <td>$${unitPrice}</td>
+//                   <td>${quantity}</td>
+//                   <td>$${item.totalPrice}</td>
+//                 </tr>
+//               `;
+//             }).join('')}
+//             <tr><td colspan="4"><p><strong>Additional Notes:</strong> ${billingData.extra_notes}</p></td></tr>
+//           </tbody>
+//         </table>
+//       </td>
+//     </tr>
+
+//     <!-- Payment Details -->
+//     <tr>
+//       <td style="padding: 20px; text-align: left;">
+//         <h3 style="color: #000;">Payment Details</h3>
+//         <p style="margin: 5px 0;"><strong>Payment Method:</strong> ${billingData.paymentMethod}</p>
+//         <p style="margin: 5px 0;"><strong>Credit Card Number:</strong> ${maskCardNumber(billingData.cardNumber)}</p>
+//         <p style="margin: 5px 0;"><strong>Total Amount:</strong> $${parseFloat(billingData.total).toFixed(2)}</p>
+//       </td>
+//     </tr>
+
+//     <!-- Footer -->
+//     <tr>
+//       <td style="padding: 20px; text-align: center; font-size: 14px; background-color:#ffeb00;">
+//         <p>If you have any questions regarding your order, feel free to contact our support team.</p>
+//         <p>Best Regards,<br>EBES Team</p>
+//       </td>
+//     </tr>
+
+//   </table>
+// </body>
+// </html>`;
+// }
+
+
 function orderStatusMailbody(billingData) {
   let orderDetails = [];
+  console.log("billingData",billingData);
+  
 
   // Ensure orderDetails is parsed if it's a string
   if (typeof billingData.orderDetails === "string") {
@@ -962,7 +1103,8 @@ function orderStatusMailbody(billingData) {
   } else if (Array.isArray(billingData.orderDetails)) {
     orderDetails = billingData.orderDetails;
   }
-
+  console.log("orderDetailssss", orderDetails);
+  
   const maskCardNumber = (cardNumber) => {
     if (!cardNumber || cardNumber.length < 4) return 'xxxx';
     return cardNumber.replace(/.(?=.{4})/g, 'x');
@@ -997,7 +1139,7 @@ function orderStatusMailbody(billingData) {
         <h3 style="color: #000;">Invoice Details</h3>
         <p style="margin: 5px 0;"><strong>Order ID:</strong> ${billingData.order_id}</p>
         <p style="margin: 5px 0;"><strong>Date of Purchase:</strong> ${billingData.dateOfPurchase}</p>
-        <p style="margin: 5px 0;"><strong>Invoice Number:</strong> ${billingData.invoiceNumber}</p>
+        <p style="margin: 5px 0;"><strong>Invoice Number:</strong> ${billingData.invoiceNumber || billingData.order_id}</p>
         <p style="margin: 5px 0;"><strong>Customer Name:</strong> ${billingData.customerName}</p>
         <p style="margin: 5px 0;"><strong>Email:</strong> ${billingData.email}</p>
         <p style="margin: 5px 0;"><strong>Order Status:</strong> ${billingData.delivery_status || "Pending"}</p>
@@ -1026,15 +1168,25 @@ function orderStatusMailbody(billingData) {
               const quantity = parseInt(item.productQuantity);
               const total = unitPrice * quantity;
 
+              // Generate HTML for Product AddOns
+              let addOnsHTML = '';
+              if (item.ProductAddOns && Array.isArray(item.ProductAddOns)) {
+                item.ProductAddOns.forEach(addonGroup => {
+                  if (addonGroup.addons && addonGroup.addons.length > 0) {
+                    addonGroup.addons.forEach(addon => {
+                      addOnsHTML += `<br><small><strong>${addonGroup.addonLable}:</strong> ${addon.addon_name} ($${addon.price})</small>`;
+                    });
+                  }
+                });
+              }
+
               return `
                 <tr>
                   <td>
                     ${item.title}
                     ${item.type === "variable" && item.variation ? `<br><small><strong>Variation:</strong> ${item.variation}</small>` : ""}
-                    ${item.selectedMilk ? `<br><small><strong>Milk:</strong> ${item.selectedMilk}</small>` : ""}
-                    ${item.whipped_cream ? `<br><small><strong>Whipped Cream:</strong> ${item.whipped_cream}</small>` : ""}
+                    ${addOnsHTML}
                     ${item.extraNote ? `<br><small><strong>ExtraNote:</strong> ${item.extraNote}</small>` : ""}
-                    ${item.selectedProductAddOn ? `<br><small><strong>Selected AddOn:</strong> ${item.selectedProductAddOn}</small>` : ""}
                   </td>
                   <td>$${unitPrice}</td>
                   <td>${quantity}</td>
@@ -1042,7 +1194,7 @@ function orderStatusMailbody(billingData) {
                 </tr>
               `;
             }).join('')}
-            <tr><td colspan="4"><p><strong>Additional Notes:</strong> ${billingData.extra_notes}</p></td></tr>
+            <tr><td colspan="4"><p><strong>Additional Notes:</strong> ${billingData.extra_notes || "N/A"}</p></td></tr>
           </tbody>
         </table>
       </td>
