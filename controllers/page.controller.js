@@ -128,30 +128,48 @@ async function getHomeData(req, res) {
         //     limit: 6
         // });
 
-        const Breadcategory = await models.ProductCategory.findOne({
-            where: { id: 5 }, // Assuming 5 is the ID for "Cuban Bread & Sandwiches"
-            include: [
-                {
-                    model: models.Product,
-                    where: {
-                        isPublic: true,
-                        status: 1
-                    },
-                    through: { attributes: [] }
-                }
-            ]
-        });
-        if (!Breadcategory) {
-            var BreadcategoryProducts = {
-                message: new Error("Cuban Bread & Sandwiches category products not found")
-            };
-        }else {
-            // Convert the category and its products to JSON
-            var BreadcategoryProducts = Breadcategory.Products;
-        }
-        console.log("BreadcategoryProducts:", BreadcategoryProducts);
+        // const Breadcategory = await models.ProductCategory.findOne({
+        //     where: { id: 5 }, // Assuming 5 is the ID for "Cuban Bread & Sandwiches"
+        //     include: [
+        //         {
+        //             model: models.Product,
+        //             where: {
+        //                 isPublic: true,
+        //                 status: 1
+        //             },
+        //             through: { attributes: [] }
+        //         }
+        //     ]
+        // });
+        // if (!Breadcategory) {
+        //     var BreadcategoryProducts = {
+        //         message: new Error("Cuban Bread & Sandwiches category products not found")
+        //     };
+        // }else {
+        //     // Convert the category and its products to JSON
+        //     var BreadcategoryProducts = Breadcategory.Products;
+        // }
+        // console.log("BreadcategoryProducts:", BreadcategoryProducts);
         
-        for (const productInstance of BreadcategoryProducts) {
+        // for (const productInstance of BreadcategoryProducts) {
+        //     const product = productInstance.get({ plain: true });
+
+        //     if (product.type === 'variable') {
+        //         const variations = await models.ProductVariation.findAll({
+        //             where: { parentProductId: product.id },
+        //             attributes: ['id', 'variationName', 'price']
+        //         });
+        //         product.variations = variations.map(v => v.get({ plain: true }));
+        //     }
+        // }
+
+let BreadcategoryProducts = [];
+
+if (!Breadcategory) {
+    BreadcategoryProducts = []; // or an empty array, not a string
+} else {
+    BreadcategoryProducts = await Promise.all(
+        Breadcategory.Products.map(async (productInstance) => {
             const product = productInstance.get({ plain: true });
 
             if (product.type === 'variable') {
@@ -161,7 +179,16 @@ async function getHomeData(req, res) {
                 });
                 product.variations = variations.map(v => v.get({ plain: true }));
             }
-        }
+
+            return product;
+        })
+    );
+}
+
+console.log("BreadcategoryProducts with variations:", BreadcategoryProducts);
+
+
+
         const Kidscategory = await models.ProductCategory.findOne({
             where: { id: 12 }, // Assuming 12 is the ID for "Kids Menu"
             include: [
