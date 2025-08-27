@@ -149,16 +149,19 @@ async function getHomeData(req, res) {
             // Convert the category and its products to JSON
             var BreadcategoryProducts = Breadcategory.Products;
         }
-        for (const product of BreadcategoryProducts) {
-            if (product.type == 'variable') {
+        console.log("BreadcategoryProducts:", BreadcategoryProducts);
+        
+        for (const productInstance of BreadcategoryProducts) {
+            const product = productInstance.get({ plain: true });
+
+            if (product.type === 'variable') {
                 const variations = await models.ProductVariation.findAll({
                     where: { parentProductId: product.id },
                     attributes: ['id', 'variationName', 'price']
                 });
-                product.variations = variations;
+                product.variations = variations.map(v => v.get({ plain: true }));
             }
         }
-
         const Kidscategory = await models.ProductCategory.findOne({
             where: { id: 12 }, // Assuming 12 is the ID for "Kids Menu"
             include: [
@@ -180,15 +183,39 @@ async function getHomeData(req, res) {
             // Convert the category and its products to JSON
             var KidscategoryProducts = Kidscategory.Products;
         }
-        for (const product of KidscategoryProducts) {
-            if (product.type == 'variable') {
+        // for (const productInstance of KidscategoryProducts) {
+        //     // Convert Sequelize instance to plain object
+        //     const product = productInstance.get({ plain: true });
+
+        //     if (product.type === 'variable') {
+        //         const variations = await models.ProductVariation.findAll({
+        //             where: { parentProductId: product.id },
+        //             attributes: ['id', 'variationName', 'price']
+        //         });
+        //         // Convert variations to plain objects
+        //         product.variations = variations.map(v => v.get({ plain: true }));
+        //     }
+        // }
+
+        const finalProducts = [];
+
+        for (const productInstance of KidscategoryProducts) {
+            const product = productInstance.get({ plain: true });
+
+            if (product.type === 'variable') {
                 const variations = await models.ProductVariation.findAll({
                     where: { parentProductId: product.id },
                     attributes: ['id', 'variationName', 'price']
                 });
-                product.variations = variations;
+                product.variations = variations.map(v => v.get({ plain: true }));
             }
+
+            finalProducts.push(product); // build new array
         }
+
+        console.log("KidscategoryProducts with variations:", JSON.stringify(finalProducts, null, 2));
+
+        
 
         // Define productSalesArray at a higher scope to ensure availability
         let productSalesArray = [];
@@ -266,7 +293,7 @@ async function getHomeData(req, res) {
                 banners: banners,
                 categories: categories,
                 BreadcategoryProducts: BreadcategoryProducts,
-                KidscategoryProducts: KidscategoryProducts,
+                KidscategoryProducts: finalProducts,
                 Bestsellers: productSalesArray
             }
         });
