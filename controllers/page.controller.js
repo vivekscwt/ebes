@@ -175,32 +175,27 @@ async function getHomeData(req, res) {
                 }
             ]
         });
-let BreadcategoryProducts = [];
+        let BreadcategoryProducts = [];
 
-if (!Breadcategory) {
-    BreadcategoryProducts = []; // or an empty array, not a string
-} else {
-    BreadcategoryProducts = await Promise.all(
-        Breadcategory.Products.map(async (productInstance) => {
-            const product = productInstance.get({ plain: true });
+        if (!Breadcategory) {
+            BreadcategoryProducts = []; 
+        } else {
+            BreadcategoryProducts = await Promise.all(
+                Breadcategory.Products.map(async (productInstance) => {
+                    const product = productInstance.get({ plain: true });
 
-            if (product.type === 'variable') {
-                const variations = await models.ProductVariation.findAll({
-                    where: { parentProductId: product.id },
-                    attributes: ['id', 'variationName', 'price']
-                });
-                product.variations = variations.map(v => v.get({ plain: true }));
-            }
+                    if (product.type === 'variable') {
+                        const variations = await models.ProductVariation.findAll({
+                            where: { parentProductId: product.id },
+                            attributes: ['id', 'variationName', 'price']
+                        });
+                        product.variations = variations.map(v => v.get({ plain: true }));
+                    }
 
-            return product;
-        })
-    );
-}
-
-console.log("BreadcategoryProducts with variations:", BreadcategoryProducts);
-
-
-
+                    return product;
+                })
+            );
+        }
         const Kidscategory = await models.ProductCategory.findOne({
             where: { id: 12 }, // Assuming 12 is the ID for "Kids Menu"
             include: [
