@@ -162,7 +162,19 @@ async function getHomeData(req, res) {
         //         product.variations = variations.map(v => v.get({ plain: true }));
         //     }
         // }
-
+        const Breadcategory = await models.ProductCategory.findOne({
+            where: { id: 5 }, // Assuming 5 is the ID for "Cuban Bread & Sandwiches"
+            include: [
+                {
+                    model: models.Product,
+                    where: {
+                        isPublic: true,
+                        status: 1
+                    },
+                    through: { attributes: [] }
+                }
+            ]
+        });
 let BreadcategoryProducts = [];
 
 if (!Breadcategory) {
