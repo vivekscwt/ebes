@@ -217,20 +217,6 @@ async function getHomeData(req, res) {
             // Convert the category and its products to JSON
             var KidscategoryProducts = Kidscategory.Products;
         }
-        // for (const productInstance of KidscategoryProducts) {
-        //     // Convert Sequelize instance to plain object
-        //     const product = productInstance.get({ plain: true });
-
-        //     if (product.type === 'variable') {
-        //         const variations = await models.ProductVariation.findAll({
-        //             where: { parentProductId: product.id },
-        //             attributes: ['id', 'variationName', 'price']
-        //         });
-        //         // Convert variations to plain objects
-        //         product.variations = variations.map(v => v.get({ plain: true }));
-        //     }
-        // }
-
         const finalProducts = [];
 
         for (const productInstance of KidscategoryProducts) {
@@ -246,11 +232,6 @@ async function getHomeData(req, res) {
 
             finalProducts.push(product); // build new array
         }
-
-        console.log("KidscategoryProducts with variations:", JSON.stringify(finalProducts, null, 2));
-
-        
-
         // Define productSalesArray at a higher scope to ensure availability
         let productSalesArray = [];
 
