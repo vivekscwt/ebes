@@ -526,7 +526,7 @@ exports.handlePayment = async (req, res, next) => {
       sourceId: paymentNonce,              
       idempotencyKey: randomUUID(),   
       amountMoney: {
-        amount: amount,           
+        amount: BigInt(amount),           
         currency: "USD",
       },
       locationId: process.env.SQUARE_LOCATION_ID,
@@ -589,10 +589,21 @@ exports.handlePayment = async (req, res, next) => {
         html: mailBody,
       });
 
+      // Fetch store address
+      const storeDetail = await models.Stordetail.findOne({
+        attributes: ["Address"],
+        raw: true,
+      });
+
       return res.status(200).json({
         success: true,
         message: "Payment successful",
-        result: { transactionId, token },
+        result: { 
+          transactionId, 
+          token, 
+          order_id, 
+          storeAddress: storeDetail ? storeDetail.Address : null 
+        }
       });
     } else {
       await models.Order_Product.update(
