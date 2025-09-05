@@ -155,6 +155,7 @@ function invoice(billingData) {
         <h3 style="color: #000;">Invoice Details</h3>
         <p style="margin: 5px 0;"><strong>Order ID:</strong> ${billingData.order_id}</p>
         <p style="margin: 5px 0;"><strong>Date of Purchase:</strong> ${billingData.dateOfPurchase}</p>
+        <p style="margin: 5px 0;"><strong>Order Pickup Time:</strong> ${billingData.order_pickup_time} mins.</p>
         <p style="margin: 5px 0;"><strong>Customer Name:</strong> ${billingData.customerName}</p>
         <p style="margin: 5px 0;"><strong>Email:</strong> ${billingData.email}</p>
       </td>
@@ -504,7 +505,7 @@ exports.handlePayment = async (req, res, next) => {
   try {
     const product_order = await models.Order_Product.findOne({
       where: { order_id },
-      attributes: ["customerName", "email", "phone", "order_details", "extra_notes"],
+      attributes: ["customerName", "email", "phone", "total_amount", "order_details", "extra_notes", "order_pickup_time"],
       raw: true,
     });
 
@@ -525,7 +526,7 @@ exports.handlePayment = async (req, res, next) => {
       sourceId: paymentNonce,              
       idempotencyKey: randomUUID(),   
       amountMoney: {
-        amount: BigInt(amount),           
+        amount: amount,           
         currency: "USD",
       },
       locationId: process.env.SQUARE_LOCATION_ID,
@@ -548,14 +549,15 @@ exports.handlePayment = async (req, res, next) => {
         dateOfPurchase: new Date().toISOString().split("T")[0],
         customerName: customerData.name,
         email: customerData.email,
-        total: amount,
-        unitPrice: amount,
+        total: product_order.total_amount,
+        unitPrice: product_order.total_amount,
         paymentMethod: payment.sourceType,
         cardNumber: `**** **** **** ${payment.cardDetails?.card?.last4}`,
         authCode: payment.cardDetails?.authResultCode || "",
         transactionId,
         orderDetails: product_order.order_details,
         extra_notes: product_order.extra_notes,
+        order_pickup_time: product_order.order_pickup_time,
         order_id,
       };
 
@@ -901,6 +903,7 @@ exports.updateOrderStatus = async (req, res, next) => {
           cardNumber: orderHistory.cardNumber,
           total: orderProduct.total_amount,
           delivery_status: orderProduct.delivery_status,
+          order_pickup_time: orderProduct.order_pickup_time,
           extra_notes: orderProduct.extra_notes
         };
 
@@ -1139,6 +1142,7 @@ function orderStatusMailbody(billingData) {
         <h3 style="color: #000;">Invoice Details</h3>
         <p style="margin: 5px 0;"><strong>Order ID:</strong> ${billingData.order_id}</p>
         <p style="margin: 5px 0;"><strong>Date of Purchase:</strong> ${billingData.dateOfPurchase}</p>
+        <p style="margin: 5px 0;"><strong>Order Pickup Time:</strong> ${billingData.order_pickup_time}</p>
         <p style="margin: 5px 0;"><strong>Invoice Number:</strong> ${billingData.invoiceNumber || billingData.order_id}</p>
         <p style="margin: 5px 0;"><strong>Customer Name:</strong> ${billingData.customerName}</p>
         <p style="margin: 5px 0;"><strong>Email:</strong> ${billingData.email}</p>
