@@ -602,7 +602,15 @@ exports.handlePayment = async (req, res, next) => {
           transactionId, 
           token, 
           order_id, 
-          storeAddress: storeDetail ? storeDetail.Address : null 
+          storeAddress: storeDetail ? storeDetail.Address : null,
+          delivery_status: "pending",
+          payment_status: "success",
+          order_details: product_order.order_details,
+          customerName: product_order.customerName,
+          email: product_order.email,
+          total: product_order.total_amount,
+          phone: product_order.phone,
+          order_pickup_time: product_order.order_pickup_time+' mins'
         }
       });
     } else {
