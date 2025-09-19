@@ -15,6 +15,7 @@ const { Admin } = require("./models");
 const orderRoutes = require("./routes/orderRoutes");
 const settingRoutes = require("./routes/setting");
 const notificationRoutes = require("./routes/notification");
+const strodetailRoutes = require("./routes/strodetail");
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/pages", pageRoutes);
 app.use("/api/settings", settingRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/strodetails", strodetailRoutes);
 
 const PORT = process.env.PORT || 3001;
 
