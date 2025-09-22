@@ -263,7 +263,7 @@ function invoice(billingData) {
         <h3 style="color: #000;">Invoice Details</h3>
         <p style="margin: 5px 0;"><strong>Order ID:</strong> ${billingData.order_id}</p>
         <p style="margin: 5px 0;"><strong>Date of Purchase:</strong> ${billingData.dateOfPurchase}</p>
-        <p style="margin: 5px 0;"><strong>Order Pickup Time:</strong> ${billingData.order_pickup_time} mins.</p>
+        <p style="margin: 5px 0;"><strong>Order Pickup Time:</strong> ${billingData.order_pickup_time} minutes.</p>
         <p style="margin: 5px 0;"><strong>Customer Name:</strong> ${billingData.customerName}</p>
         <p style="margin: 5px 0;"><strong>Email:</strong> ${billingData.email}</p>
       </td>
@@ -720,6 +720,12 @@ exports.handlePayment = async (req, res, next) => {
         raw: true,
       });
 
+      await models.Notification.create({
+          type: "private",
+          message_body: `Order ID #${order_id} has been received.`,
+          user_id: user_id,
+          order_id: order_id
+      });
       return res.status(200).json({
         success: true,
         message: "Payment successful",
@@ -997,13 +1003,13 @@ exports.updateOrderStatus = async (req, res, next) => {
         let notificationMessage = "";
         switch (delivery_status) {
             case "pending":
-                notificationMessage = `Order ID #${orderId} has been received and is pending processing.`;
+                notificationMessage = `Order ID #${orderId} has been received.`;
                 break;
             case "processing":
                 notificationMessage = `Order ID #${orderId} is being processed.`;
                 break;
             case "ready":
-                notificationMessage = `Order ID #${orderId} is ready for delivery.`;
+                notificationMessage = `Order ID #${orderId} is ready for pickup.`;
                 break;
             case "completed":
                 notificationMessage = `Order ID #${orderId} has been completed. Thank you for your purchase!`;
@@ -1067,7 +1073,7 @@ exports.updateOrderStatus = async (req, res, next) => {
             subjectLine = "Order is Being Processed";
             break;
           case "ready":
-            subjectLine = "Your Order is Ready for Delivery";
+            subjectLine = "Your Order is Ready for Pickup";
             break;
           case "completed":
             subjectLine = "Order Completed - Thank You!";
@@ -1286,7 +1292,7 @@ function orderStatusMailbody(billingData) {
         <h3 style="color: #000;">Invoice Details</h3>
         <p style="margin: 5px 0;"><strong>Order ID:</strong> ${billingData.order_id}</p>
         <p style="margin: 5px 0;"><strong>Date of Purchase:</strong> ${billingData.dateOfPurchase}</p>
-        <p style="margin: 5px 0;"><strong>Order Pickup Time:</strong> ${billingData.order_pickup_time}</p>
+        <p style="margin: 5px 0;"><strong>Order Pickup Time:</strong> ${billingData.order_pickup_time} minutes</p>
         <p style="margin: 5px 0;"><strong>Invoice Number:</strong> ${billingData.invoiceNumber || billingData.order_id}</p>
         <p style="margin: 5px 0;"><strong>Customer Name:</strong> ${billingData.customerName}</p>
         <p style="margin: 5px 0;"><strong>Email:</strong> ${billingData.email}</p>
